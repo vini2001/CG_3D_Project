@@ -17,6 +17,7 @@
 #include "globals.hpp"
 #include "gameController.hpp"
 #include "GText.hpp"
+#include "texture.hpp"
 
 using namespace std;
 
@@ -76,19 +77,19 @@ void WindowSizeCallback(GLFWwindow* window, int width, int height){
 static bool firstChange = true;
 Vec2 mousePos;
 static void cursor_position_callback(GLFWwindow* window, double x, double y){
-    if(firstChange) {
-        x = 0;
-        firstChange = false;
-    }
-    if(abs(x) > game::width / 2) {
-        x = x > 0 ? ( game::width / 2 ) : -(game::width / 2);
-        glfwSetCursorPos(game::window, x, y);
-    }
-    if(abs(y) > game::height / 2) {
-        y = y > 0 ? (game::height / 2) : -(game::height / 2);
-        glfwSetCursorPos(game::window, x, y);
-    }
-    mousePos = Vec2(x, y);
+    // if(firstChange) {
+    //     x = 0;
+    //     firstChange = false;
+    // }
+    // if(abs(x) > game::width / 2) {
+    //     x = x > 0 ? ( game::width / 2 ) : -(game::width / 2);
+    //     glfwSetCursorPos(game::window, x, y);
+    // }
+    // if(abs(y) > game::height / 2) {
+    //     y = y > 0 ? (game::height / 2) : -(game::height / 2);
+    //     glfwSetCursorPos(game::window, x, y);
+    // }
+    // mousePos = Vec2(x, y);
 }
 
 int main(void){
@@ -109,7 +110,7 @@ int main(void){
     glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
     glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
     
-    game::window = glfwCreateWindow(1440, 900, "CG game", glfwGetPrimaryMonitor(), NULL);
+    game::window = glfwCreateWindow(1440, 900, "CG game", NULL, NULL);
     if(game::window == NULL) {
         cout << "Failed to create windowGame" << endl;
         glfwTerminate();
@@ -120,7 +121,7 @@ int main(void){
     glfwSetMouseButtonCallback(game::window, mouse_button_callback);
     glfwSetCursorPosCallback(game::window, cursor_position_callback);
     glfwSetWindowSizeCallback(game::window, WindowSizeCallback);
-    glfwSetInputMode(game::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(game::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwGetWindowSize(game::window, &game::width, &game::height);
     
     cout << "height: " << game::height << ", width: " << game::width << endl;
@@ -131,6 +132,7 @@ int main(void){
     // Needed for text to work
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     
     Shader shaderProgram("shaders/default.vert", "shaders/default.frag");
     gameController.init(&shaderProgram);
@@ -144,7 +146,7 @@ int main(void){
     
     long lastFpsUpdate = getMillis();
     string fpsS;
-    
+
     while (!glfwWindowShouldClose(game::window)) {
         
         long gameTimeEllapsed = getMillis() - lastGameTime;
@@ -157,6 +159,8 @@ int main(void){
         // every 10 ms do the render process
         if(realTimeEllapsed > 10) {
             
+            glEnable(GL_DEPTH_TEST);
+
             // getMillis() will subtract the paused time, so framesSinceUpdate will always subtract the paused time to avoid time jumps
             lastGameTime = getMillis();
             framesSinceUpdate = gameTimeEllapsed;
@@ -171,13 +175,13 @@ int main(void){
             fpsCount++; fpsSum += fps;
             
             glClearColor(0.03f, 0.06f, 0.08f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-            shaderProgram.activate();
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            
+
             gameController.handleInput(pressedKey, pressedMouseButton, mousePos);
             pressedKey = -1;
             pressedMouseButton = -1; // set as -1 to avoid duplicated actions
+
             gameController.frameActions();
             gameController.drawElements();
             

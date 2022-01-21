@@ -8,6 +8,8 @@
 #include "EBO.hpp"
 #include "GText.hpp"
 #include "vectors.hpp"
+#include "texture.hpp"
+#include "camera.hpp"
 
 
 
@@ -54,6 +56,12 @@ private:
     
     vector<FlashMessage> flashMessages;
     Shader *shader;
+
+    VAO *lightVAO;
+    Shader *lightShader;
+
+    Texture *brickTex;
+    Camera *camera;
     
     
     long lastAttack = 0;
