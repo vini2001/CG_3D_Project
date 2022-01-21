@@ -10,7 +10,7 @@
 #include "vectors.hpp"
 #include "texture.hpp"
 #include "camera.hpp"
-
+#include "GObject.hpp"
 
 
 using namespace std;
@@ -62,6 +62,8 @@ private:
 
     Texture *brickTex;
     Camera *camera;
+
+    vector<GObject> objects;
     
     
     long lastAttack = 0;
