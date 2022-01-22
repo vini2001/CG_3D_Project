@@ -39,10 +39,10 @@ static void key_callback(GLFWwindow* windowGame, int key, int scancode, int acti
             glfwSetWindowShouldClose(windowGame, GLFW_TRUE);
             break;
         default:
-            if(!(find(supportedKeys.begin(), supportedKeys.end(), key) != supportedKeys.end())) {
-                // unsupported key
-                break;
-            }
+            // if(!(find(supportedKeys.begin(), supportedKeys.end(), key) != supportedKeys.end())) {
+            //     // unsupported key
+            //     break;
+            // }
 
             if(pressedKey == key && action == GLFW_RELEASE) {
                 pressedKey = (GLuint) NULL;

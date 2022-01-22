@@ -51,9 +51,63 @@ void GameController::init(Shader *shaderProgram){
     game::started = true;
 
     glfwGetWindowSize(game::window, &game::width, &game::height);
-    this->camera = new Camera(game::width, game::height, glm::vec3(0.0f, 0.0f, 2.0f));
+    this->camera = new Camera(game::width, game::height, glm::vec3(5.0f, 1.0f, 5.0f));
+
+    initLight();
+
+    // Texture
+	brickTex = new Texture("brick.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
+	brickTex->texUnit(*shaderProgram, "tex0", 0);
+
+    skyTex = new Texture("whitetex.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
+	skyTex->texUnit(*shaderProgram, "tex0", 0);
 
 
+    // Objects
+    objects.clear();
+    GLfloat pi = 3.14159265f;
+    GObject *pyr1 = createPyramid();
+    GObject *pyr2 = createPyramid();
+    GObject *pyr3 = createPyramid();
+    GObject *wall = createWall();
+    GObject *wall2 = createWall();
+    GObject *wall3 = createWall();
+    GObject *wall4 = createWall();
+    this->plane = createPlane();
+    this->sky = createPlane(v3(3, 173, 252), 1.0f);
+    wall2->rotate(glm::vec3(0.0f, 270, 0.0f));
+
+    wall4->rotate(glm::vec3(0.0f, 270, 0.0f));
+    wall3->translate(glm::vec3(0.0f, 0.0f, 384.0f));
+    wall4->translate(glm::vec3(384.0f, 0.0f, 0.0f));
+    this->sky->translate(glm::vec3(0.0f, 300.0f, 0.0f));
+
+    this->tower = createTower();
+    this->tower->translate(glm::vec3((384.0f/2.0f), 0.0f, (384.0f/2.0f)));
+
+    for(int i = 1; i <= 15; i++) {
+        for(int j = 1; j <= 15; j++) {
+            GObject *boid = createBoid(v3(10.0f * j, abs(10.0f - j%20)*5.0f, 10.0f * i));
+            objectsPlaneText.push_back(boid);
+        }
+    }
+
+    pyr2->translate(v3(10.0f, 0.0f, 10.0f));
+    pyr3->translate(v3(0.0f, 2.3f,  1.5f));
+    objects.push_back(pyr1);
+    objects.push_back(pyr2);
+    objects.push_back(pyr3);
+    objects.push_back(wall);
+    objects.push_back(wall2);
+    objects.push_back(wall3);
+    objects.push_back(wall4);
+    objects.push_back(plane);
+    objects.push_back(tower);
+
+    objectsPlaneText.push_back(this->sky);
+}
+
+void GameController::initLight() {
     this->lightShader = new Shader("shaders/light.vert", "shaders/light.frag");
 
     lightVAO = new VAO();
@@ -68,9 +122,7 @@ void GameController::init(Shader *shaderProgram){
     lightEBO.unbind();
 
     v3 lightColor = v3(1.0f, 1.0f, 1.0f);
-    
-
-    v3 lightPos = v3(0.1f,  1.1f, 0.9f);
+    v3 lightPos = v3(384.0f/2.0f,  500.0f, 384.0f/2.0f);
     m4 lightModel = m4(1.0f);
     lightModel = glm::translate(lightModel, lightPos);
 
@@ -81,28 +133,10 @@ void GameController::init(Shader *shaderProgram){
     lightShader->activate();
     glUniformMatrix4fv(glGetUniformLocation(lightShader->id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
     glUniform3f(glGetUniformLocation(lightShader->id, "lightColor"), lightColor.x, lightColor.y, lightColor.z);
-    shaderProgram->activate();
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram->id, "model"), 1, GL_FALSE, glm::value_ptr(pyramidModel));
-    glUniform3f(glGetUniformLocation(shaderProgram->id, "lightColor"), lightColor.x, lightColor.y, lightColor.z);
-    glUniform3f(glGetUniformLocation(shaderProgram->id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-
-
-
-    // Texture
-	brickTex = new Texture("brick.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
-	brickTex->texUnit(*shaderProgram, "tex0", 0);
-
-
-    // Objects
-    objects.clear();
-    GObject pyr1 = createPyramid();
-    GObject pyr2 = createPyramid();
-    GObject pyr3 = createPyramid();
-    pyr2.translate(v3(0.0f, 3.0f, -0.5f));
-    pyr3.translate(v3(0.0f, 2.3f,  1.5f));
-    objects.push_back(pyr1);
-    objects.push_back(pyr2);
-    objects.push_back(pyr3);
+    this->shader->activate();
+    glUniformMatrix4fv(glGetUniformLocation(this->shader->id, "model"), 1, GL_FALSE, glm::value_ptr(pyramidModel));
+    glUniform3f(glGetUniformLocation(this->shader->id, "lightColor"), lightColor.x, lightColor.y, lightColor.z);
+    glUniform3f(glGetUniformLocation(this->shader->id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 }
 
 void GameController::handleInput(GLuint pressedKey, GLuint pressedMouseButton, Vec2 mousePos) {
@@ -110,6 +144,18 @@ void GameController::handleInput(GLuint pressedKey, GLuint pressedMouseButton, V
     if(pressedKey == GLFW_KEY_R) {
         destroy();
         init(shader);
+    }else if(pressedKey == GLFW_KEY_C) { // Bring light to camera
+        // print camera position
+        v3 camPos = camera->position;
+        printf("Camera position: %f, %f, %f\n", camPos.x, camPos.y, camPos.z);
+        v3 lightPos = v3(camera->position.x, camera->position.y, camera->position.z);
+        m4 lightModel = m4(1.0f);
+        lightModel = glm::translate(lightModel, lightPos);
+
+        this->lightShader->activate();
+        glUniformMatrix4fv(glGetUniformLocation(this->lightShader->id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+        this->shader->activate();
+        glUniform3f(glGetUniformLocation(this->shader->id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
     }
     
     if(!game::started) return;
@@ -135,7 +181,7 @@ double prevTime = glfwGetTime();
 void GameController::drawElements() {
 
     camera->inputs(game::window);
-    camera->updateMatrix(45.0f, 0.1f, 100.0f);
+    camera->updateMatrix(45.0f, 0.1f, 1000.0f);
 
     this->shader->activate();
     glUniform3f(glGetUniformLocation(this->shader->id, "camPos"), camera->position.x, camera->position.y, camera->position.z);
@@ -143,9 +189,29 @@ void GameController::drawElements() {
 
     if(vao != NULL) delete vao;
     
+    drawObjects(objects, brickTex);
+    drawObjects(objectsPlaneText, skyTex);
+
+    this->lightShader->activate();
+    camera->matrix(lightShader, "camMatrix");
+    lightVAO->bind();
+    glDrawElements(GL_TRIANGLES, sizeof(lightIndices) / sizeof(int), GL_UNSIGNED_INT, 0);
+    
+    
+    for(int i = 0; i < flashMessages.size(); i++) {
+        if(flashMessages[i].finishAt > getMillis()) {
+            FlashMessage m = flashMessages[i];
+            drawText(m.text, m.x, 70 * i + m.y, flashMessages[i].scale, m.rgb);
+        }else{
+            flashMessages.erase(flashMessages.begin()+i--);
+        }
+    }
+}
+
+void GameController::drawObjects(vector<GObject*> &objects, Texture* tex) {
     vao = new VAO();
     vao->bind();
-    brickTex->bind();
+    tex->bind();
     int sizeVArray = 0;
     int sizeIArray = 0;
     
@@ -159,9 +225,9 @@ void GameController::drawElements() {
 
 
     for(int i = 0; i < objects.size(); i++) {
-        GObject obj = objects[i];
-        totalVertices += obj.vertices.size();
-        totalIndices += obj.indices.size();
+        GObject *obj = objects[i];
+        totalVertices += obj->vertices.size();
+        totalIndices += obj->indices.size();
     }
     sizeVArray = totalVertices * 11 * sizeof(GLfloat);
     sizeIArray = totalIndices * sizeof(GLuint);
@@ -170,7 +236,7 @@ void GameController::drawElements() {
     indices = (GLuint*) malloc(sizeIArray);
 
     for(int i = 0; i < objects.size(); i++) {
-        objects[i].prepare(vArray, arrayPos, indices, indicesPos);
+        objects[i]->prepare(vArray, arrayPos, indices, indicesPos);
     }
 
 
@@ -185,13 +251,6 @@ void GameController::drawElements() {
     vao->unbind();
     delete vbo1;
     delete ebo1;
-    
-
-    double currTime = glfwGetTime();
-    // if(currTime - prevTime > 1/60) {
-    //     prevTime = currTime;
-    //     rotation += 0.5f;
-    // }
 
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
@@ -215,21 +274,6 @@ void GameController::drawElements() {
 
 
     glDrawElements(GL_TRIANGLES, sizeIArray / sizeof(int), GL_UNSIGNED_INT, 0);
-
-    this->lightShader->activate();
-    camera->matrix(lightShader, "camMatrix");
-    lightVAO->bind();
-    glDrawElements(GL_TRIANGLES, sizeof(lightIndices) / sizeof(int), GL_UNSIGNED_INT, 0);
-    
-    
-    for(int i = 0; i < flashMessages.size(); i++) {
-        if(flashMessages[i].finishAt > getMillis()) {
-            FlashMessage m = flashMessages[i];
-            drawText(m.text, m.x, 70 * i + m.y, flashMessages[i].scale, m.rgb);
-        }else{
-            flashMessages.erase(flashMessages.begin()+i--);
-        }
-    }
 }
 
 void GameController::drawText(string text, float x, float y, float scale, glm::vec3 colors){

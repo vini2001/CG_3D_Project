@@ -1,5 +1,6 @@
 
 #include "GObject.hpp"
+#include <glm/glm.hpp>
 
 GObject::GObject() {
     this->vertices = vector<GVertice>();
@@ -48,5 +49,21 @@ void GObject::prepare(GLfloat* vArray, long &arrayPos, GLuint* iArray, long &ind
     
     for(int i = 0; i < indices.size(); i++) {
         iArray[indicesPos++] = indices[i] + startingId;
+    }
+}
+
+void GObject::scale(v3 scale) {
+    for(int i = 0; i < vertices.size(); i++) {
+        vertices[i].coords.x *= scale.x;
+        vertices[i].coords.y *= scale.y;
+        vertices[i].coords.z *= scale.z;
+    }
+}
+
+void GObject::rotate(v3 degrees) {
+    for(int i = 0; i < vertices.size(); i++) {
+        vertices[i].coords = glm::rotate(vertices[i].coords, glm::radians(degrees.x), v3(1, 0, 0));
+        vertices[i].coords = glm::rotate(vertices[i].coords, glm::radians(degrees.y), v3(0, 1, 0));
+        vertices[i].coords = glm::rotate(vertices[i].coords, glm::radians(degrees.z), v3(0, 0, 1));
     }
 }

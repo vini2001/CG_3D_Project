@@ -31,6 +31,7 @@ struct FlashMessage {
 class GameController {
 public:
     void drawElements();
+    void drawObjects(vector<GObject*> &objects, Texture *tex);
     void detectColisions();
     void handleInput(GLuint pressedKey, GLuint pressedMouseButton, Vec2 mousePos);
     void frameActions();
@@ -43,6 +44,7 @@ public:
     bool playerAlive = false;
     
     void init(Shader *shaderProgram);
+    void initLight();
     
     GameController();
     
@@ -61,9 +63,15 @@ private:
     Shader *lightShader;
 
     Texture *brickTex;
+    Texture *skyTex;
     Camera *camera;
 
-    vector<GObject> objects;
+    vector<GObject*> objects;
+    vector<GObject*> objectsPlaneText;
+
+    GObject* plane;
+    GObject* sky;
+    GObject* tower;
     
     
     long lastAttack = 0;

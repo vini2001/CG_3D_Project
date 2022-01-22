@@ -15,6 +15,7 @@ class GVertice {
         v3 normal;
         
         GVertice(v3 coords, v3 colors, v2 texture, v3 normal);
+        GVertice(v3 coords, v3 colors, v2 texture);
 
      
 };

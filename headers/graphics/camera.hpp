@@ -17,7 +17,7 @@ typedef glm::mat4 m4;
 class Camera {
     public:
     v3 position;
-    v3 orientation = v3(0.0f, 0.0f, -1.0f);
+    v3 orientation = v3(0.0f, 0.0f, 1.0f);
     v3 up = v3(0.0f, 1.0f, 0.0f);
     m4 cameraMatrix = m4(1.0f);
 
