@@ -30,6 +30,8 @@ class GObject {
         void scale(v3 scale);
         void rotate(v3 rotation);
 
+        virtual void animate();
+
         GObject();
 
      

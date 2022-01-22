@@ -58,67 +58,6 @@ GObject* createPyramid() {
     return pyramid;
 }
 
-GObject* createBoid(v3 translation) {
-    GObject* boid = new GObject();
-
-    float heightWings = 1.5f;
-    float headLength = 2.0f;
-    float backWidth = 2.0f;
-    float tailLength = 1.7f;
-
-    v3 wingsColor = v3(.419f, 0.519f, 0.919f);
-    v3 trunkColor = v3(0.2f, 0.2f, 0.2f);
-    v3 backColor = v3(0.04f, 0.04f, 0.04f);
-
-    // LEFT WING
-    int leftMi = boid->addVertice(GVertice(v3(0.0f, 0.0f, 0.0f), wingsColor, v2(0.0f, 0.0f)));
-    int v2i = boid->addVertice(GVertice(v3(3.0f, -heightWings/2, 1.5f), trunkColor, v2(5.0f, 0.0f)));
-    int v3i = boid->addVertice(GVertice(v3(2.6f, -heightWings/2, -1.5f), trunkColor, v2(5.0f, 0.0f)));
-    int v4i = boid->addVertice(GVertice(v3(3.0f, heightWings/2, 1.5f), trunkColor, v2(5.0f, 0.0f)));
-    int v5i = boid->addVertice(GVertice(v3(2.6f, heightWings/2, -1.5f), trunkColor, v2(5.0f, 0.0f)));
-    
-    boid->addTriangle(leftMi, v2i, v3i);
-    boid->addTriangle(leftMi, v4i, v5i);
-    boid->addTriangle(leftMi, v2i, v4i);
-    boid->addTriangle(leftMi, v3i, v5i);
-
-    //TRUNK
-    int trli = boid->addVertice(GVertice(v3(3.4f, -heightWings/2, -1.5f), trunkColor, v2(5.0f, 0.0f)));
-    int trhi = boid->addVertice(GVertice(v3(3.4f, heightWings/2, -1.5f), trunkColor, v2(5.0f, 0.0f)));
-    boid->addTriangle(v2i, v3i, trli);
-    boid->addTriangle(v4i, v5i, trhi);
-
-    //HEAD
-    int headI = boid->addVertice(GVertice(v3(3.0f, 0.0f, -1.5 - headLength), v3(0.52f, 0.12f, 0.2f), v2(5.0f, 0.0f)));
-    boid->addTriangle(v5i, trhi, headI);
-    boid->addTriangle(v3i, trli, headI);
-    boid->addTriangle(v3i, v5i, headI);
-    boid->addTriangle(trli, trhi, headI);
-
-    //RIGHT WING
-    int righMi = boid->addVertice(GVertice(v3(6.0f, 0.0f, 0.0f), wingsColor, v2(0.0f, 0.0f)));
-    boid->addTriangle(righMi, v2i, trli);
-    boid->addTriangle(righMi, v4i, trhi);
-    boid->addTriangle(righMi, v2i, v4i);
-    boid->addTriangle(righMi, trli, trhi);
-
-    //TAIL
-    int tailL = boid->addVertice(GVertice(v3(3.0f - backWidth/2, 0, 1.5f + tailLength), backColor, v2(0.0f, 0.0f)));
-    int tailR = boid->addVertice(GVertice(v3(3.0f + backWidth/2, 0, 1.5f + tailLength), backColor, v2(0.0f, 0.0f)));
-    boid->addTriangle(tailL, tailR, v4i);
-    boid->addTriangle(tailL, tailR, v2i);
-    boid->addTriangle(tailR, v2i, v4i);
-    boid->addTriangle(tailL, v2i, v4i);
-
-
-    boid->rotate(v3(0.0f, 180.0f, 0.0f));
-    boid->translate(translation);
-    boid->scale(v3(0.2f, 0.2f, 0.2f));
-
-    return boid;
-}
-
-
 GObject* createTower() {
 
     GLfloat radius = 20.0f;

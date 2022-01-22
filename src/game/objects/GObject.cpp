@@ -28,6 +28,8 @@ int GObject::getSize() {
     return vertices.size() * 11;
 }
 
+void GObject::animate() {}
+
 void GObject::prepare(GLfloat* vArray, long &arrayPos, GLuint* iArray, long &indicesPos) {
 
     // Each vertice represents 11 positions on the vArray array. So for each 11 positions, 1 vertice has been added. At this point, we need to know how many vertices have been added to determine the starting ID of this shape's vertices

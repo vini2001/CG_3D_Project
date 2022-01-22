@@ -5,6 +5,4 @@
     GObject* createPlane();
     GObject* createPlane(v3 color, float textureScale);
     GObject* createTower();
-
-    GObject* createBoid(v3 translation);
 #endif

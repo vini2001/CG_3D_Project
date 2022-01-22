@@ -68,6 +68,7 @@ private:
 
     vector<GObject*> objects;
     vector<GObject*> objectsPlaneText;
+    vector<GObject*> boids;
 
     GObject* plane;
     GObject* sky;

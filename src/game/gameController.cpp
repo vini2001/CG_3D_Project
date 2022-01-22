@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include "vectors.hpp"
 #include "GObject.hpp"
+#include "boid.hpp"
 #include "customObjects.hpp"
 
 #define DEBUG_MODE_FALSE -100
@@ -87,8 +88,9 @@ void GameController::init(Shader *shaderProgram){
 
     for(int i = 1; i <= 15; i++) {
         for(int j = 1; j <= 15; j++) {
-            GObject *boid = createBoid(v3(10.0f * j, abs(10.0f - j%20)*5.0f, 10.0f * i));
+            GObject *boid = new Boid(v3(10.0f * j, abs(10.0f - j%20)*5.0f, 10.0f * i));
             objectsPlaneText.push_back(boid);
+            boids.push_back(boid);
         }
     }
 
@@ -188,6 +190,10 @@ void GameController::drawElements() {
     camera->matrix(this->shader, "camMatrix");
 
     if(vao != NULL) delete vao;
+
+    for(int i = 0; i < boids.size(); i++) {
+        boids[i]->animate();
+    }
     
     drawObjects(objects, brickTex);
     drawObjects(objectsPlaneText, skyTex);
