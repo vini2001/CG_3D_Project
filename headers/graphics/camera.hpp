@@ -37,6 +37,8 @@ class Camera {
 
     void updateMatrix(float FOVdeg, float nearPlane, float farPlane, Shader* shader, const char* uniform);
     void inputs(GLFWwindow* window);
+
+    void lookAt(v3 target);
 };
 
 #endif

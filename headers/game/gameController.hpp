@@ -11,6 +11,7 @@
 #include "texture.hpp"
 #include "camera.hpp"
 #include "GObject.hpp"
+#include "boid.hpp"
 
 
 using namespace std;
@@ -68,14 +69,24 @@ private:
 
     vector<GObject*> objects;
     vector<GObject*> objectsPlaneText;
-    vector<GObject*> boids;
+    vector<Boid*> boids;
+
+    vector<GObject*> walls;
 
     GObject* plane;
     GObject* sky;
     GObject* tower;
+
+    v3 towerTop;
     
+    bool boidsRotating = false;
     
     long lastAttack = 0;
+
+    v3 getBoidGroupCenter();
+
+    bool lockedOrientation = true;
+    bool lockedPositionBehind = false;
 };
 
 #endif /* gameController_hpp */

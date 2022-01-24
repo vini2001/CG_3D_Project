@@ -83,14 +83,16 @@ void GameController::init(Shader *shaderProgram){
     wall4->translate(glm::vec3(384.0f, 0.0f, 0.0f));
     this->sky->translate(glm::vec3(0.0f, 300.0f, 0.0f));
 
-    this->tower = createTower();
+    this->tower = createTower(70.0f);
     this->tower->translate(glm::vec3((384.0f/2.0f), 0.0f, (384.0f/2.0f)));
+    this->towerTop = v3(384.0f/2.0f, 70.0f, 384.0f/2.0f);
 
     for(int i = 1; i <= 15; i++) {
         for(int j = 1; j <= 15; j++) {
-            GObject *boid = new Boid(v3(10.0f * j, abs(10.0f - j%20)*5.0f, 10.0f * i));
+            GObject *boid = new Boid(v3(10.0f * j, 30.0f, 10.0f * i));
             objectsPlaneText.push_back(boid);
-            boids.push_back(boid);
+            boid->speed = v3(0.00f, 0.00f, 0.1f);
+            boids.push_back(dynamic_cast<Boid*>(boid));
         }
     }
 
@@ -105,6 +107,21 @@ void GameController::init(Shader *shaderProgram){
     objects.push_back(wall4);
     objects.push_back(plane);
     objects.push_back(tower);
+
+    walls.push_back(wall);
+    walls.push_back(wall2);
+    walls.push_back(wall3);
+    walls.push_back(wall4);
+
+    // loop objects
+    for(int i = 0; i < objects.size(); i++) {
+        objects[i]->recalculateNormals();
+    }
+
+    // print normals of tower
+    for(int i = 0; i < tower->vertices.size(); i++) {
+        printf("%f, %f, %f\n", tower->vertices[i].normal.x, tower->vertices[i].normal.y, tower->vertices[i].normal.z);
+    }
 
     objectsPlaneText.push_back(this->sky);
 }
@@ -124,7 +141,7 @@ void GameController::initLight() {
     lightEBO.unbind();
 
     v3 lightColor = v3(1.0f, 1.0f, 1.0f);
-    v3 lightPos = v3(384.0f/2.0f,  500.0f, 384.0f/2.0f);
+    v3 lightPos = v3(384.0f/3.0f,  600.0f, 384.0f/2.0f);
     m4 lightModel = m4(1.0f);
     lightModel = glm::translate(lightModel, lightPos);
 
@@ -158,6 +175,22 @@ void GameController::handleInput(GLuint pressedKey, GLuint pressedMouseButton, V
         glUniformMatrix4fv(glGetUniformLocation(this->lightShader->id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
         this->shader->activate();
         glUniform3f(glGetUniformLocation(this->shader->id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+    }else if(pressedKey == GLFW_KEY_1) {
+        lockedPositionBehind = false;
+        v3 boidGroupCenter = getBoidGroupCenter();
+        camera->position = this->towerTop + v3(0.0f, 2.0f, 0.0f);
+        camera->lookAt(boidGroupCenter);
+    }else if(pressedKey == GLFW_KEY_2) {
+        lockedPositionBehind = true;
+        camera->lookAt(getBoidGroupCenter());
+    }else if(pressedKey == GLFW_KEY_L) {
+        this->lockedOrientation = !this->lockedOrientation;
+    }else if(pressedKey == GLFW_KEY_0) {
+        this->lockedPositionBehind = false;
+    }else if(pressedKey == GLFW_KEY_P) {
+        for(int i = 0; i < boids.size(); i++) {
+            boids[i]->speed = v3(0.0f, 0.0f, 0.0f);
+        }
     }
     
     if(!game::started) return;
@@ -182,6 +215,18 @@ float rotation = 0.0f;
 double prevTime = glfwGetTime();
 void GameController::drawElements() {
 
+    if(this->lockedOrientation) {
+        camera->lookAt(getBoidGroupCenter());
+    }
+
+    // Lock camera position behind boids 
+    if(this->lockedPositionBehind) {
+        v3 boidGroupCenter = getBoidGroupCenter();
+        v3 boidsBack = boidGroupCenter - glm::normalize(boids[0]->speed) * 35.0f;
+        boidsBack.y = boids[0]->getPos().y + 20.0f;
+        camera->position = boidsBack;
+    }
+
     camera->inputs(game::window);
     camera->updateMatrix(45.0f, 0.1f, 1000.0f);
 
@@ -191,8 +236,48 @@ void GameController::drawElements() {
 
     if(vao != NULL) delete vao;
 
+    v3 boidsSpeed = glm::normalize(boids[0]->speed);
+    v3 boidsPos = boids[0]->vertices[0].coords; 
+    for(int i = 0; i < this->walls.size(); i++) {
+        if(boidsRotating) {
+            if(boids[0]->rotating <= 0.0f) {
+                boids[0]->rotating = 0.0f;
+                boidsRotating = false;
+            }
+            break;
+        }
+        v3 p1 = this->walls[i]->vertices[0].coords;
+        v3 p2 = this->walls[i]->vertices[1].coords;
+        v3 p3 = this->walls[i]->vertices[2].coords;
+        // get plane based on 3 points
+        v3 normal = glm::normalize(glm::cross(p2 - p1, p3 - p1));
+        
+        // get angle in degrees between normal and boid's speed
+        float angle = glm::degrees(glm::acos(glm::dot(boidsSpeed, normal)));
+
+        if(angle < 150 && angle > 20) continue;
+
+        // get distance to shortest vertice on the wall
+        GLfloat distanceToWall = abs(glm::dot(boidsPos - p1, normal));
+
+        v3 newBoidPos = boidsPos + boidsSpeed;
+
+        // if distance to a arbitrary point got smaller, this is the wall the boids are going into
+        GLfloat intoWallMove = glm::distance(boidsPos, p1) - glm::distance(newBoidPos, p1);
+
+        if(intoWallMove > 0) {
+            if(distanceToWall < 100) {
+                boidsRotating = true;
+                for(int j = 0; j < boids.size(); j++) {
+                    boids[j]->rotating = 90.0f;
+                }
+            }
+        }
+    }
+
     for(int i = 0; i < boids.size(); i++) {
         boids[i]->animate();
+        boids[i]->frameUpdate();
     }
     
     drawObjects(objects, brickTex);
@@ -296,4 +381,17 @@ void GameController::destroy() {
 
 GameController::~GameController() {
     destroy();
+}
+
+
+v3 GameController::getBoidGroupCenter() {
+    // loop boids and get average pos
+    v3 sum = v3(0.0f, 0.0f, 0.0f);
+    for(int i = 0; i < boids.size(); i++) {
+        sum += boids[i]->getPos();
+    }
+    sum.x /= boids.size();
+    sum.y /= boids.size();
+    sum.z /= boids.size();
+    return sum;
 }

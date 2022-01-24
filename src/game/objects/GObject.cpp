@@ -1,6 +1,7 @@
 
 #include "GObject.hpp"
 #include <glm/glm.hpp>
+typedef glm::vec3 v3;
 
 GObject::GObject() {
     this->vertices = vector<GVertice>();
@@ -16,6 +17,8 @@ void GObject::addTriangle(int v1, int v2, int v3) {
     indices.push_back(v1);
     indices.push_back(v2);
     indices.push_back(v3);
+
+    verticesGroup.push_back(vector<int>({v1, v2, v3}));
 }
 
 void GObject::translate(v3 translation) {
@@ -29,6 +32,26 @@ int GObject::getSize() {
 }
 
 void GObject::animate() {}
+
+void GObject::recalculateNormals() {
+    if(!generateNormals) return;
+    
+    for(int i = 0; i < verticesGroup.size(); i++) {
+        v3 ve1 = vertices[verticesGroup[i][0]].coords;
+        v3 ve2 = vertices[verticesGroup[i][1]].coords;
+        v3 ve3 = vertices[verticesGroup[i][2]].coords;
+
+        v3 normal = glm::normalize(glm::cross(ve2 - ve1, ve3 - ve1));
+
+        vertices[verticesGroup[i][0]].normal += normal;
+        vertices[verticesGroup[i][1]].normal += normal;
+        vertices[verticesGroup[i][2]].normal += normal;
+    }
+
+    for(int i = 0; i < vertices.size(); i++) {
+        vertices[i].normal = glm::normalize(vertices[i].normal);
+    }
+}
 
 void GObject::prepare(GLfloat* vArray, long &arrayPos, GLuint* iArray, long &indicesPos) {
 
@@ -54,6 +77,11 @@ void GObject::prepare(GLfloat* vArray, long &arrayPos, GLuint* iArray, long &ind
     }
 }
 
+void GObject::frameUpdate() {
+    translate(this->speed);
+    recalculateNormals();
+}
+
 void GObject::scale(v3 scale) {
     for(int i = 0; i < vertices.size(); i++) {
         vertices[i].coords.x *= scale.x;
@@ -63,9 +91,16 @@ void GObject::scale(v3 scale) {
 }
 
 void GObject::rotate(v3 degrees) {
+    v3 origin = vertices[0].coords;
     for(int i = 0; i < vertices.size(); i++) {
+        vertices[i].coords -= origin;
         vertices[i].coords = glm::rotate(vertices[i].coords, glm::radians(degrees.x), v3(1, 0, 0));
         vertices[i].coords = glm::rotate(vertices[i].coords, glm::radians(degrees.y), v3(0, 1, 0));
         vertices[i].coords = glm::rotate(vertices[i].coords, glm::radians(degrees.z), v3(0, 0, 1));
+        vertices[i].coords += origin;
     }
+}
+
+v3 GObject::getPos() {
+    return vertices[0].coords;
 }

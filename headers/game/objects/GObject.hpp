@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/vector_angle.hpp>
+#include <vector>
 
 
 using namespace std;
@@ -30,10 +31,19 @@ class GObject {
         void scale(v3 scale);
         void rotate(v3 rotation);
 
+        v3 speed;
+
         virtual void animate();
+        virtual void frameUpdate();
+        void recalculateNormals();
 
         GObject();
 
+        virtual v3 getPos();
+
+        vector<vector<int>> verticesGroup;
+
+        bool generateNormals = false;
      
 };
 

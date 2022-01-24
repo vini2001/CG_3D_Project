@@ -1,6 +1,6 @@
 #include "GVertice.hpp"
 #include "GObject.hpp"
-
+#include <glm/glm.hpp>
 
 GObject* createPyramid() {
 
@@ -58,10 +58,8 @@ GObject* createPyramid() {
     return pyramid;
 }
 
-GObject* createTower() {
-
+GObject* createTower(GLfloat height) {
     GLfloat radius = 20.0f;
-    GLfloat height = 70.0f;
     GLfloat circunference = 2.0f * M_PI * radius;
     int segments = 200;
     GLfloat segmentWidth = circunference / segments;
@@ -90,8 +88,8 @@ GObject* createTower() {
         GVertice  ver2 = GVertice(v3(x, 0.0f, y), towerColor - v3(0.1f, 0.1f, 0.1f), ver1.texture + v2(0.0f, angle > 180 ? -0.01f : 0.01f));
         int v2i = tower->addVertice(ver2);
 
-        tower->addTriangle(vci, leftMi, v2i);
-        tower->addTriangle(vti, leftMi, v2i);
+        tower->addTriangle(leftMi, vci, v2i);
+        tower->addTriangle(leftMi, vti, v2i);
 
         leftMi = v2i;
         ver1 = ver2;
@@ -100,23 +98,27 @@ GObject* createTower() {
 
         angle += (360/segments);
     }
-        
+
+
+    tower->generateNormals = true;
     return tower;
 }
 
 GObject* createWall() {
     GObject* wall = new GObject();
 
-    GVertice ver1 = GVertice(v3(0.0f, 0.0f, 0.0f), v3(0.219f, 0.219f, 0.219f), v2(0.0f, 0.0f));
-    GVertice ver2 = GVertice(v3(0.0f, 1.0f, 0.0f), v3(0.219f, 0.219f, 0.219f), v2(5.0f, 0.0f));
+    v3 wallColor = v3(0.419f, 0.419f, 0.419f);
+
+    GVertice ver1 = GVertice(v3(0.0f, 0.0f, 0.0f), wallColor, v2(0.0f, 0.0f));
+    GVertice ver2 = GVertice(v3(0.0f, 1.0f, 0.0f), wallColor, v2(5.0f, 0.0f));
 
     int leftMi = wall->addVertice(ver1);
     int v2i = wall->addVertice(ver2);
     int v3i, v4i;
 
     for(int i = 1; i < 25; i++) {
-        GVertice ver3 = GVertice(v3(i*1.0f, 0.0f, 0.0f), v3(0.219f, 0.219f, 0.219f), i%2 == 1 ? v2(5.0f, 5.0f) : v2(0.0f, 0.0f));
-        GVertice ver4 = GVertice(v3(i*1.0f, 1.0f, 0.0f), v3(0.219f, 0.219f, 0.219f),  i%2 == 1 ? v2(0.0f, 5.0f) : v2(5.0f, 0.0f));
+        GVertice ver3 = GVertice(v3(i*1.0f, 0.0f, 0.0f), wallColor, i%2 == 1 ? v2(5.0f, 5.0f) : v2(0.0f, 0.0f));
+        GVertice ver4 = GVertice(v3(i*1.0f, 1.0f, 0.0f), wallColor,  i%2 == 1 ? v2(0.0f, 5.0f) : v2(5.0f, 0.0f));
 
         v3i = wall->addVertice(ver3);
         v4i = wall->addVertice(ver4);

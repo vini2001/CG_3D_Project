@@ -4,5 +4,5 @@
     GObject* createWall();
     GObject* createPlane();
     GObject* createPlane(v3 color, float textureScale);
-    GObject* createTower();
+    GObject* createTower(GLfloat height);
 #endif

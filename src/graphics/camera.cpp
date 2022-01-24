@@ -16,6 +16,11 @@ void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane) {
     cameraMatrix = projection * view;
 }
 
+void Camera::lookAt(v3 target) {
+	// get orientation vector
+	this->orientation = glm::normalize(target - position);
+}
+
 void Camera::matrix(Shader *shader, const char* uniform) {
     glUniformMatrix4fv(glGetUniformLocation(shader->id, uniform), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 }
