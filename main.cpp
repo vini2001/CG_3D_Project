@@ -27,6 +27,8 @@ static GLuint pressedKey;
 static GLuint pressedMouseButton = -1;
 static map<GLuint, bool> keyIsPressed;
 
+float aspectRatio;
+
 vector<GLuint> supportedKeys = {
     GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_ESCAPE, GLFW_PRESS, GLFW_KEY_S,
     GLFW_KEY_R, GLFW_KEY_D
@@ -39,11 +41,6 @@ static void key_callback(GLFWwindow* windowGame, int key, int scancode, int acti
             glfwSetWindowShouldClose(windowGame, GLFW_TRUE);
             break;
         default:
-            // if(!(find(supportedKeys.begin(), supportedKeys.end(), key) != supportedKeys.end())) {
-            //     // unsupported key
-            //     break;
-            // }
-
             if(pressedKey == key && action == GLFW_RELEASE) {
                 pressedKey = (GLuint) NULL;
                 keyIsPressed[pressedKey] = false;
@@ -67,29 +64,18 @@ void mouse_button_callback(GLFWwindow* windowGame, int button, int action, int m
 }
 
 void WindowSizeCallback(GLFWwindow* window, int width, int height){
-    game::width = width;
-    game::height = height;
-    
     gameController.resizeScreen();
     gameController.drawElements();
 }
 
+void WindowPosCallback(GLFWwindow* window, int xpos, int ypos){
+}
+
+
 static bool firstChange = true;
 Vec2 mousePos;
 static void cursor_position_callback(GLFWwindow* window, double x, double y){
-    // if(firstChange) {
-    //     x = 0;
-    //     firstChange = false;
-    // }
-    // if(abs(x) > game::width / 2) {
-    //     x = x > 0 ? ( game::width / 2 ) : -(game::width / 2);
-    //     glfwSetCursorPos(game::window, x, y);
-    // }
-    // if(abs(y) > game::height / 2) {
-    //     y = y > 0 ? (game::height / 2) : -(game::height / 2);
-    //     glfwSetCursorPos(game::window, x, y);
-    // }
-    // mousePos = Vec2(x, y);
+    mousePos = Vec2(x, y);
 }
 
 int main(void){
@@ -109,7 +95,9 @@ int main(void){
     glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
     glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
     glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-    
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+    glfwWindowHint(GL_SCISSOR_TEST, GL_TRUE);
+
     game::window = glfwCreateWindow(1440, 900, "CG game", NULL, NULL);
     if(game::window == NULL) {
         cout << "Failed to create windowGame" << endl;
@@ -121,10 +109,13 @@ int main(void){
     glfwSetMouseButtonCallback(game::window, mouse_button_callback);
     glfwSetCursorPosCallback(game::window, cursor_position_callback);
     glfwSetWindowSizeCallback(game::window, WindowSizeCallback);
+    glfwSetWindowPosCallback(game::window, WindowPosCallback);
     // glfwSetInputMode(game::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwGetWindowSize(game::window, &game::width, &game::height);
     
     cout << "height: " << game::height << ", width: " << game::width << endl;
+    aspectRatio = (float)game::width / (float)game::height;
+    glfwSetWindowAspectRatio(game::window, game::width, game::height);
     
     glfwMakeContextCurrent(game::window);
     gladLoadGL();

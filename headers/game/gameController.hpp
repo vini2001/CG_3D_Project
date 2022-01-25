@@ -87,6 +87,8 @@ private:
 
     bool lockedOrientation = true;
     bool lockedPositionBehind = false;
+
+    bool paused = false;
 };
 
 #endif /* gameController_hpp */

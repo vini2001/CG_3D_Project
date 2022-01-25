@@ -92,6 +92,7 @@ void GameController::init(Shader *shaderProgram){
             GObject *boid = new Boid(v3(10.0f * j, 30.0f, 10.0f * i));
             objectsPlaneText.push_back(boid);
             boid->speed = v3(0.00f, 0.00f, 0.1f);
+            boid->translate(v3(0.0f, rand()%6 - 3, 0.0f));
             boids.push_back(dynamic_cast<Boid*>(boid));
         }
     }
@@ -117,12 +118,6 @@ void GameController::init(Shader *shaderProgram){
     for(int i = 0; i < objects.size(); i++) {
         objects[i]->recalculateNormals();
     }
-
-    // print normals of tower
-    for(int i = 0; i < tower->vertices.size(); i++) {
-        printf("%f, %f, %f\n", tower->vertices[i].normal.x, tower->vertices[i].normal.y, tower->vertices[i].normal.z);
-    }
-
     objectsPlaneText.push_back(this->sky);
 }
 
@@ -188,9 +183,19 @@ void GameController::handleInput(GLuint pressedKey, GLuint pressedMouseButton, V
     }else if(pressedKey == GLFW_KEY_0) {
         this->lockedPositionBehind = false;
     }else if(pressedKey == GLFW_KEY_P) {
-        for(int i = 0; i < boids.size(); i++) {
-            boids[i]->speed = v3(0.0f, 0.0f, 0.0f);
-        }
+        paused = !paused;
+    }else if(pressedKey == GLFW_KEY_EQUAL) {
+        int distance = 25;
+        v3 boidsCenter = getBoidGroupCenter();
+        v3 randomPos = v3((rand() % distance)-distance/2 + boidsCenter.x, (rand() % distance)-distance/2 + boidsCenter.y, (rand() % distance)-distance/2 + boidsCenter.z);
+        GObject *boid = new Boid(v3(0.0f, 0.0f, 0.0f));
+        objectsPlaneText.push_back(boid);
+        boid->speed = v3(0.00f, 0.00f, 0.1f);
+        boid->translate(randomPos);
+        boids.push_back(dynamic_cast<Boid*>(boid));
+
+    }else if(pressedKey == GLFW_KEY_MINUS) {
+
     }
     
     if(!game::started) return;
@@ -208,6 +213,9 @@ void GameController::frameActions() {
 void GameController::resizeScreen() {
     delete gText;
     gText = new GText();
+
+    camera->width = game::width;
+    camera->height = game::height;
 }
 
 
@@ -275,9 +283,11 @@ void GameController::drawElements() {
         }
     }
 
-    for(int i = 0; i < boids.size(); i++) {
-        boids[i]->animate();
-        boids[i]->frameUpdate();
+    if(!paused) {
+        for(int i = 0; i < boids.size(); i++) {
+            boids[i]->animate();
+            boids[i]->frameUpdate();
+        }
     }
     
     drawObjects(objects, brickTex);
@@ -296,6 +306,10 @@ void GameController::drawElements() {
         }else{
             flashMessages.erase(flashMessages.begin()+i--);
         }
+    }
+
+    if(paused) {
+        drawText("PAUSED", game::width / 2 - 80, game::height / 2, 1.0f, v3(1.0f, 1.0f, 1.0f));
     }
 }
 
@@ -349,7 +363,7 @@ void GameController::drawObjects(vector<GObject*> &objects, Texture* tex) {
 
     model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
     view = glm::translate(view, glm::vec3(0.0f, -0.5f, -2.0f));
-    proj = glm::perspective(glm::radians(45.0f), (float)game::width / (float)game::height, 0.1f, 100.0f);
+    proj = glm::perspective(glm::radians(45.0f), ((float)game::width) / ((float)game::height), 0.1f, 100.0f);
 
     int modelLoc = glGetUniformLocation(this->shader->id, "model");
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -367,7 +381,7 @@ void GameController::drawObjects(vector<GObject*> &objects, Texture* tex) {
     glDrawElements(GL_TRIANGLES, sizeIArray / sizeof(int), GL_UNSIGNED_INT, 0);
 }
 
-void GameController::drawText(string text, float x, float y, float scale, glm::vec3 colors){
+void GameController::drawText(string text, float x, float y, float scale, glm::vec3 colors){    
     gText->renderText(text, x, y, scale, colors);
     shader->activate();
 }
