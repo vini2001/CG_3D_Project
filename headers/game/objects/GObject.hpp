@@ -31,7 +31,9 @@ class GObject {
         void scale(v3 scale);
         void rotate(v3 rotation);
 
-        v3 speed;
+        v3 speedVector;
+        float speed = 1.0f;
+        float speedMultiplier = 1.0f;
 
         virtual void animate();
         virtual void frameUpdate();

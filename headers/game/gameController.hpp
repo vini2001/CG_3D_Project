@@ -50,6 +50,10 @@ public:
     GameController();
     
 private:
+
+    float worldSize = 384.0f;
+    float worldHeight = 300.0f;
+
     VAO* vao = NULL;
     VBO* vbo1;
     EBO* ebo1;
@@ -70,6 +74,9 @@ private:
     vector<GObject*> objects;
     vector<GObject*> objectsPlaneText;
     vector<Boid*> boids;
+    vector<GObject*> obstacles;
+
+    Boid* goalBoid;
 
     vector<GObject*> walls;
 
@@ -79,7 +86,7 @@ private:
 
     v3 towerTop;
     
-    bool boidsRotating = false;
+    bool goalBoidRotating = false;
     
     long lastAttack = 0;
 
@@ -89,6 +96,18 @@ private:
     bool lockedPositionBehind = false;
 
     bool paused = false;
+
+    bool isValidBoidPosition(v3 pos);
+
+
+    void checkForWalls();
+    void checkForObstacles();
+
+    void createRandomBoid();
+    void deleteRandomBoid();
+    void followGoal();
+
+    bool goingToHitTower(Boid *boid, GObject *obstacle);
 };
 
 #endif /* gameController_hpp */

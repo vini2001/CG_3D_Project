@@ -78,7 +78,7 @@ void GObject::prepare(GLfloat* vArray, long &arrayPos, GLuint* iArray, long &ind
 }
 
 void GObject::frameUpdate() {
-    translate(this->speed);
+    translate(this->speedVector * this->speed * this->speedMultiplier);
     recalculateNormals();
 }
 

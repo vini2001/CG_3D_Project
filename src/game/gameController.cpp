@@ -67,9 +67,6 @@ void GameController::init(Shader *shaderProgram){
     // Objects
     objects.clear();
     GLfloat pi = 3.14159265f;
-    GObject *pyr1 = createPyramid();
-    GObject *pyr2 = createPyramid();
-    GObject *pyr3 = createPyramid();
     GObject *wall = createWall();
     GObject *wall2 = createWall();
     GObject *wall3 = createWall();
@@ -79,35 +76,57 @@ void GameController::init(Shader *shaderProgram){
     wall2->rotate(glm::vec3(0.0f, 270, 0.0f));
 
     wall4->rotate(glm::vec3(0.0f, 270, 0.0f));
-    wall3->translate(glm::vec3(0.0f, 0.0f, 384.0f));
-    wall4->translate(glm::vec3(384.0f, 0.0f, 0.0f));
-    this->sky->translate(glm::vec3(0.0f, 300.0f, 0.0f));
+    wall3->translate(glm::vec3(0.0f, 0.0f, worldSize));
+    wall4->translate(glm::vec3(worldSize, 0.0f, 0.0f));
+    this->sky->translate(glm::vec3(0.0f, worldHeight, 0.0f));
 
-    this->tower = createTower(70.0f);
-    this->tower->translate(glm::vec3((384.0f/2.0f), 0.0f, (384.0f/2.0f)));
-    this->towerTop = v3(384.0f/2.0f, 70.0f, 384.0f/2.0f);
+    this->tower = createTower(70.0f, 20.0f);
+    this->tower->translate(glm::vec3((worldSize/2.0f), 0.0f, (worldSize/2.0f)));
+    this->towerTop = v3(worldSize/2.0f, 70.0f, worldSize/2.0f);
 
-    for(int i = 1; i <= 15; i++) {
-        for(int j = 1; j <= 15; j++) {
-            GObject *boid = new Boid(v3(10.0f * j, 30.0f, 10.0f * i));
+    
+    GObject *t2 = createTower(20.0f, 8.0f);
+    GObject *t3 = createTower(20.0f, 8.0f);
+    GObject *t4 = createTower(20.0f, 8.0f);
+    GObject *t5 = createTower(20.0f, 8.0f);
+    t2->translate(glm::vec3(100.0, 0.0f, 50.0f));
+    t3->translate(glm::vec3(50.0, 0.0f, 100.0f));
+    t4->translate(glm::vec3(200.0, 0.0f, 50.0f));
+    t5->translate(glm::vec3(50.0, 0.0f, 200.0f));
+    this->obstacles.push_back(t2);
+    this->obstacles.push_back(t3);
+    this->obstacles.push_back(t4);
+    this->obstacles.push_back(t5);
+
+    for(int i = 1; i <= 5; i++) {
+        for(int j = 1; j <= 5; j++) {
+            GObject *boid = new Boid(v3(20.0f * j, 30.0f, 20.0f * i));
             objectsPlaneText.push_back(boid);
-            boid->speed = v3(0.00f, 0.00f, 0.1f);
             boid->translate(v3(0.0f, rand()%6 - 3, 0.0f));
             boids.push_back(dynamic_cast<Boid*>(boid));
         }
     }
 
-    pyr2->translate(v3(10.0f, 0.0f, 10.0f));
-    pyr3->translate(v3(0.0f, 2.3f,  1.5f));
-    objects.push_back(pyr1);
-    objects.push_back(pyr2);
-    objects.push_back(pyr3);
+    // loop boids
+    for(int i = 0; i < boids.size(); i++) {
+        boids[i]->originalPosition = getBoidGroupCenter() - boids[i]->getPos();
+    }
+
+    this->goalBoid = new Boid(v3(0.0f, 30.0f, 0.0f));
+    goalBoid->scale(v3(3.0f, 3.0f, 3.0f));
+    this->goalBoid->translate(v3(worldSize/2.0f, 0.0f, worldSize/2.0f - 80.0f));
+    objectsPlaneText.push_back(goalBoid);
+
     objects.push_back(wall);
     objects.push_back(wall2);
     objects.push_back(wall3);
     objects.push_back(wall4);
     objects.push_back(plane);
     objects.push_back(tower);
+    objects.push_back(t2);
+    objects.push_back(t3);
+    objects.push_back(t4);
+    objects.push_back(t5);
 
     walls.push_back(wall);
     walls.push_back(wall2);
@@ -136,7 +155,7 @@ void GameController::initLight() {
     lightEBO.unbind();
 
     v3 lightColor = v3(1.0f, 1.0f, 1.0f);
-    v3 lightPos = v3(384.0f/3.0f,  600.0f, 384.0f/2.0f);
+    v3 lightPos = v3(worldSize/3.0f,  600.0f, worldSize/2.0f);
     m4 lightModel = m4(1.0f);
     lightModel = glm::translate(lightModel, lightPos);
 
@@ -185,17 +204,27 @@ void GameController::handleInput(GLuint pressedKey, GLuint pressedMouseButton, V
     }else if(pressedKey == GLFW_KEY_P) {
         paused = !paused;
     }else if(pressedKey == GLFW_KEY_EQUAL) {
-        int distance = 25;
-        v3 boidsCenter = getBoidGroupCenter();
-        v3 randomPos = v3((rand() % distance)-distance/2 + boidsCenter.x, (rand() % distance)-distance/2 + boidsCenter.y, (rand() % distance)-distance/2 + boidsCenter.z);
-        GObject *boid = new Boid(v3(0.0f, 0.0f, 0.0f));
-        objectsPlaneText.push_back(boid);
-        boid->speed = v3(0.00f, 0.00f, 0.1f);
-        boid->translate(randomPos);
-        boids.push_back(dynamic_cast<Boid*>(boid));
-
+        createRandomBoid();
     }else if(pressedKey == GLFW_KEY_MINUS) {
-
+        deleteRandomBoid();
+    }else if(pressedKey == GLFW_KEY_O) {
+        goalBoid->speed += 0.1f;
+    }else if(pressedKey == GLFW_KEY_I) {
+        goalBoid->speed -= 0.1f;
+        if(goalBoid->speed < 0.0f) {
+            goalBoid->speed = 0.0f;
+        }
+    }else if(pressedKey == GLFW_KEY_M) {
+        for(int i = 0; i < boids.size(); i++) {
+            boids[i]->speed += 0.1f;
+        }
+    }else if(pressedKey == GLFW_KEY_N) {
+        for(int i = 0; i < boids.size(); i++) {
+            boids[i]->speed -= 0.1f;
+            if(boids[i]->speed < 0.0f) {
+                boids[i]->speed = 0.0f;
+            }
+        }
     }
     
     if(!game::started) return;
@@ -229,8 +258,8 @@ void GameController::drawElements() {
 
     // Lock camera position behind boids 
     if(this->lockedPositionBehind) {
-        v3 boidGroupCenter = getBoidGroupCenter();
-        v3 boidsBack = boidGroupCenter - glm::normalize(boids[0]->speed) * 35.0f;
+        v3 boidGroupCenter = boids[0]->getPos();
+        v3 boidsBack = boidGroupCenter - glm::normalize(boids[0]->speedVector) * 35.0f;
         boidsBack.y = boids[0]->getPos().y + 20.0f;
         camera->position = boidsBack;
     }
@@ -244,50 +273,32 @@ void GameController::drawElements() {
 
     if(vao != NULL) delete vao;
 
-    v3 boidsSpeed = glm::normalize(boids[0]->speed);
-    v3 boidsPos = boids[0]->vertices[0].coords; 
-    for(int i = 0; i < this->walls.size(); i++) {
-        if(boidsRotating) {
-            if(boids[0]->rotating <= 0.0f) {
-                boids[0]->rotating = 0.0f;
-                boidsRotating = false;
-            }
-            break;
-        }
-        v3 p1 = this->walls[i]->vertices[0].coords;
-        v3 p2 = this->walls[i]->vertices[1].coords;
-        v3 p3 = this->walls[i]->vertices[2].coords;
-        // get plane based on 3 points
-        v3 normal = glm::normalize(glm::cross(p2 - p1, p3 - p1));
+    checkForWalls();
+    followGoal();
+    checkForObstacles();
+
+    v3 center = getBoidGroupCenter();
+    //loop every boid
+    for(int i = 0; i < boids.size(); i++) {
+        v3 goal = boids[i]->originalPosition + center;
+        float distance = glm::distance(goal, boids[i]->getPos());
+        float nextDistance = glm::distance(goal, boids[i]->getPos() + boids[i]->speedVector);
         
-        // get angle in degrees between normal and boid's speed
-        float angle = glm::degrees(glm::acos(glm::dot(boidsSpeed, normal)));
+        boids[i]->speedMultiplier = nextDistance < distance ? 1.2f : 0.8f;
 
-        if(angle < 150 && angle > 20) continue;
-
-        // get distance to shortest vertice on the wall
-        GLfloat distanceToWall = abs(glm::dot(boidsPos - p1, normal));
-
-        v3 newBoidPos = boidsPos + boidsSpeed;
-
-        // if distance to a arbitrary point got smaller, this is the wall the boids are going into
-        GLfloat intoWallMove = glm::distance(boidsPos, p1) - glm::distance(newBoidPos, p1);
-
-        if(intoWallMove > 0) {
-            if(distanceToWall < 100) {
-                boidsRotating = true;
-                for(int j = 0; j < boids.size(); j++) {
-                    boids[j]->rotating = 90.0f;
-                }
-            }
+        if(distance < 10.0f) {
+            boids[i]->speedMultiplier = 1.0f;
         }
     }
-
+    
     if(!paused) {
         for(int i = 0; i < boids.size(); i++) {
             boids[i]->animate();
             boids[i]->frameUpdate();
         }
+
+        goalBoid->animate();
+        goalBoid->frameUpdate();
     }
     
     drawObjects(objects, brickTex);
@@ -408,4 +419,168 @@ v3 GameController::getBoidGroupCenter() {
     sum.y /= boids.size();
     sum.z /= boids.size();
     return sum;
+}
+
+bool GameController::isValidBoidPosition(v3 pos) {
+    if(pos.x < 5.0f || pos.x > worldSize - 5.0f) return false;
+    if(pos.z < 5.0f || pos.z > worldSize - 5.0f) return false;
+    if(pos.y < 5.0f || pos.y > worldHeight - 5.0f) return false;
+
+    // avoid boids colisions
+    for(int i = 0; i < boids.size(); i++) {
+        GLfloat dist = glm::distance(pos, boids[i]->getPos());
+        if(dist < 2.0f) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void GameController::createRandomBoid() {
+    int distance = 25;
+    v3 boidsCenter = getBoidGroupCenter();
+    v3 randomPos;
+
+    int count = 0;
+    GObject *boid;
+    do {
+        boid = new Boid(v3(0.0f, 0.0f, 0.0f));
+        boid->translate(v3((rand() % distance)-distance/2 + boidsCenter.x, (rand() % 20) - 5 + boidsCenter.y, (rand() % distance)-distance/2 + boidsCenter.z));
+        count++;
+    }while(!isValidBoidPosition(boid->getPos()) && count < 10);
+    if(count >= 10) return;
+    // GObject *boid = new Boid(v3(0.0f, 0.0f, 0.0f));
+    objectsPlaneText.push_back(boid);
+
+    Boid *boidD = dynamic_cast<Boid*>(boid);
+    boidD->syncWith(boids[0]);
+
+    // boidD->rotateBoid(boids[0]->rotated);
+    boid->translate(randomPos);
+    boids.push_back(boidD);
+}
+
+void GameController::deleteRandomBoid() {
+    // delete random boid
+    if(boids.size() > 1) {
+        int index = rand() % boids.size();
+        objectsPlaneText.erase(objectsPlaneText.begin() + index);
+        boids.erase(boids.begin() + index);
+    }
+}
+
+void GameController::checkForWalls() {
+    v3 boidsSpeed = glm::normalize(goalBoid->speedVector);
+    v3 boidsPos = goalBoid->getPos();
+
+    bool set = false;
+
+    for(int i = 0; i < this->walls.size(); i++) {
+      
+        v3 p1 = this->walls[i]->vertices[0].coords;
+        v3 p2 = this->walls[i]->vertices[1].coords;
+        v3 p3 = this->walls[i]->vertices[2].coords;
+        // get plane based on 3 points
+        v3 normal = glm::normalize(glm::cross(p2 - p1, p3 - p1));
+        
+
+        // get distance to shortest vertice on the wall
+        GLfloat distanceToWall = abs(glm::dot(boidsPos - p1, normal));
+
+        v3 newBoidPos = boidsPos + boidsSpeed;
+
+        // if distance to a arbitrary point got smaller, this is the wall the boids are going into
+        float intoWallMove = distanceToWall - abs(glm::dot(newBoidPos - p1, normal)) > 0;
+        // printf("intoWallMove: %f\n", intoWallMove);
+
+        if(intoWallMove) {
+            if(distanceToWall < 60) {
+                goalBoid->rotating = true;
+                set = true;
+            }
+        }
+    }
+
+    // add some randomness to the rotation total movement
+    if(!set) {
+        goalBoid->framesToDisableRotation = rand() % (int)(((float)10)/goalBoid->speed);
+    }
+
+}
+
+bool GameController::goingToHitTower(Boid *boidTest, GObject *tower) {
+    v3 boidTestPos = boidTest->getPos(); boidTestPos.y = 0.0f;
+    v3 nextboidTestPos = boidTestPos + boidTest->speedVector;
+    v3 towerPos = tower->getPos(); towerPos.y = 0.0f;
+    // get distance to tower
+    GLfloat distanceToTower = glm::distance(boidTestPos, towerPos);
+    GLfloat nextDistanceToTower = glm::distance(nextboidTestPos, towerPos);
+    
+    // if not going to hit tower stop
+    if(!(distanceToTower < 35.0)) {
+        return false;
+    }
+
+    boidTest->rotating = true;
+    
+    v3 vec1 = boidTest->speedVector;
+    v3 vec2 = towerPos - boidTestPos;
+
+    bool isToTheLeft = glm::dot(glm::cross(vec1, vec2), glm::normalize(boidTest->getPos())) < 0;
+    if(isToTheLeft) {
+        boidTest->rotatingNeg = false;
+    }else{
+        boidTest->rotatingNeg = true;
+    }
+    return true;
+}
+
+void GameController::checkForObstacles() {
+
+    bool obstacleFound = false;
+    for(int j = 0; j < obstacles.size(); j++){
+        obstacleFound |= goingToHitTower(goalBoid, obstacles[j]);
+        for(int i = 0; i < boids.size(); i++) {
+            obstacleFound |= goingToHitTower(boids[i], obstacles[j]);
+        }
+    }
+
+    // loop every boid
+    for(int i = 0; i < boids.size(); i++) {
+        // loop every boid
+        for(int j = i+1; j < boids.size(); j++) {
+            // if same boid, continue
+            if(i == j) continue;
+            // get distance to other boid
+            GLfloat distance = glm::distance(boids[i]->getPos(), boids[j]->getPos());
+            // if distance is small, try to avoid
+            if(distance < 5.0f && !obstacleFound) {
+                boids[i]->rotating = false;
+                break;
+            }
+        }
+    }
+}
+
+void GameController::followGoal() {
+    for(int i = 0; i < boids.size(); i++) {
+        // follow goal
+        v3 goalPos = goalBoid->getPos();
+        v3 vec1 = boids[i]->speedVector;
+        v3 vec2 = goalPos - boids[i]->getPos() ;
+
+        // get angle between boid and goal
+        // get angle to rotate vec1 to vec 2, between -180 and 180
+        GLfloat angle = glm::acos(glm::dot(vec1, vec2) / (glm::length(vec1) * glm::length(vec2)));
+        
+        v3 a = vec1;
+        v3 b = vec2;
+
+        float dot = a.x*-b.z + a.z*b.x;
+        bool isToTheLeft = dot > 0;
+    
+        boids[i]->rotating = true;
+        boids[i]->rotatingNeg = !isToTheLeft;
+    }
 }

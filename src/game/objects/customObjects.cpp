@@ -58,8 +58,8 @@ GObject* createPyramid() {
     return pyramid;
 }
 
-GObject* createTower(GLfloat height) {
-    GLfloat radius = 20.0f;
+GObject* createTower(GLfloat height, GLfloat radius) {
+
     GLfloat circunference = 2.0f * M_PI * radius;
     int segments = 200;
     GLfloat segmentWidth = circunference / segments;

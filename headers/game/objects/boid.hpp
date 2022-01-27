@@ -14,9 +14,20 @@ class Boid : public GObject {
         void frameUpdate();
         Boid(v3 translation);
 
-        GLfloat rotating = 0.0f;
+        bool rotating = 0.0f;
+        bool rotatingNeg = false;
+        vector<GLfloat> rotatingQueue;
 
         v3 getPos();
+
+        void rotateBoid(float degree);
+        void syncWith(Boid *boid);
+
+        float rotated = 0.0f;
+
+        int framesToDisableRotation = -1;
+
+        v3 originalPosition;
 
     private:
         int leftWingId;
@@ -26,6 +37,8 @@ class Boid : public GObject {
 
         bool animationStarted = false;
         float yCoord;
+
+        float size = 0.3f;
 
 };
 

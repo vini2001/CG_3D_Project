@@ -27,18 +27,39 @@ void Boid::animate() {
 void Boid::frameUpdate() {
     GObject::frameUpdate();
 
-    if(rotating <= 0.0f) return;
-    GLfloat rotateSpeed = 0.5f;
-    this->rotate(v3(0, rotateSpeed, 0));
+    if(!rotating) {
+        return;
+    }
+
+    if(framesToDisableRotation > -1) {
+        framesToDisableRotation--;
+        if(framesToDisableRotation == -1) {
+            rotating = false;
+            return;
+        }
+    }
+
+    GLfloat rotateSpeed = 2.0f * speed * speedMultiplier;
+    this->rotateBoid(rotatingNeg ? -rotateSpeed : rotateSpeed);
+}
+
+void Boid::rotateBoid(float degree) {
+    this->rotate(v3(0, degree, 0));
     
     // rotate speed vector
-    this->speed = glm::rotateY(this->speed, glm::radians(rotateSpeed));
-    rotating -= rotateSpeed;
+    this->speedVector = glm::rotateY(this->speedVector, glm::radians(degree));
+    rotated += degree;
 }
 
 // set the calculated pos to a vertice in the trunk so it doesn't flap as the wings do
 v3 Boid::getPos() {
     return this->vertices[5].coords;
+}
+
+void Boid::syncWith(Boid *boid) {
+    this->rotating = boid->rotating;
+    this->rotateBoid(boid->rotated);
+    this->speed = boid->speed;
 }
 
 Boid::Boid(v3 translation) {
@@ -94,7 +115,10 @@ Boid::Boid(v3 translation) {
 
     this->rotate(v3(0.0f, 180.0f, 0.0f));
     this->translate(translation);
-    this->scale(v3(0.2f, 0.2f, 0.2f));
+    this->scale(v3(size, size, size));
 
     this->generateNormals = true;
+
+    this->speedVector = v3(0.00f, 0.00f, 1.0f);
+    this->speed = 0.1f;
 }
