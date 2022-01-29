@@ -19,6 +19,7 @@ class GObject {
     public:
         vector<GVertice> vertices;
         vector<int> indices;
+        bool destroyed = false;
 
         int addVertice(GVertice v);
         void addTriangle(int v1, int v2, int v3);
@@ -39,6 +40,8 @@ class GObject {
         virtual void frameUpdate();
         void recalculateNormals();
 
+        void destroy();
+
         GObject();
 
         virtual v3 getPos();
@@ -46,6 +49,8 @@ class GObject {
         vector<vector<int>> verticesGroup;
 
         bool generateNormals = false;
+        
+        float opacity = 1.0;
      
 };
 

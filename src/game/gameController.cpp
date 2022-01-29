@@ -89,14 +89,26 @@ void GameController::init(Shader *shaderProgram){
     GObject *t3 = createTower(20.0f, 8.0f);
     GObject *t4 = createTower(20.0f, 8.0f);
     GObject *t5 = createTower(20.0f, 8.0f);
+    GObject *t6 = createTower(30.0f, 5.0f);
     t2->translate(glm::vec3(100.0, 0.0f, 50.0f));
     t3->translate(glm::vec3(50.0, 0.0f, 100.0f));
     t4->translate(glm::vec3(200.0, 0.0f, 50.0f));
     t5->translate(glm::vec3(50.0, 0.0f, 200.0f));
+    t6->translate(glm::vec3(300.0, 0.0f, 200.0f));
+    this->obstacles.push_back(tower);
     this->obstacles.push_back(t2);
     this->obstacles.push_back(t3);
     this->obstacles.push_back(t4);
     this->obstacles.push_back(t5);
+    this->obstacles.push_back(t6);
+
+    ghostBoid = new Boid(v3(100.0f, 30.0f, 100.0f), v3(1.0f, 0.0f, 0.0f));
+    ghostBoid->opacity = 0.05f;
+    ghostBoid->speedMultiplier = 1.06f;
+    objectsPlaneText.push_back(ghostBoid);
+    ghostBoid->translate(v3(30.0f, rand()%6 - 3, 30.0f));
+    ghostBoid->scale(v3(0.5f, 0.5f, 0.5f));
+    boids.push_back(dynamic_cast<Boid*>(ghostBoid));
 
     for(int i = 1; i <= 5; i++) {
         for(int j = 1; j <= 5; j++) {
@@ -113,6 +125,7 @@ void GameController::init(Shader *shaderProgram){
     }
 
     this->goalBoid = new Boid(v3(0.0f, 30.0f, 0.0f));
+    this->goalBoid->size = 0.9f; // hack pra arrumar batidas das asas
     goalBoid->scale(v3(3.0f, 3.0f, 3.0f));
     this->goalBoid->translate(v3(worldSize/2.0f, 0.0f, worldSize/2.0f - 80.0f));
     objectsPlaneText.push_back(goalBoid);
@@ -127,6 +140,7 @@ void GameController::init(Shader *shaderProgram){
     objects.push_back(t3);
     objects.push_back(t4);
     objects.push_back(t5);
+    objects.push_back(t6);
 
     walls.push_back(wall);
     walls.push_back(wall2);
@@ -203,6 +217,11 @@ void GameController::handleInput(GLuint pressedKey, GLuint pressedMouseButton, V
         this->lockedPositionBehind = false;
     }else if(pressedKey == GLFW_KEY_P) {
         paused = !paused;
+    }else if(pressedKey == GLFW_KEY_X) { // debug
+        // this->ghostBoid->frameUpdate();
+        // //print getBoidGroupCenter
+        // v3 boidGroupCenter = getBoidGroupCenter();
+        // printf("Boid group center: %f, %f, %f\n", boidGroupCenter.x, boidGroupCenter.y, boidGroupCenter.z);
     }else if(pressedKey == GLFW_KEY_EQUAL) {
         createRandomBoid();
     }else if(pressedKey == GLFW_KEY_MINUS) {
@@ -253,14 +272,15 @@ double prevTime = glfwGetTime();
 void GameController::drawElements() {
 
     if(this->lockedOrientation) {
-        camera->lookAt(getBoidGroupCenter());
+        // camera->lookAt(getBoidGroupCenter());
+        camera->lookAt(boids[0]->getPos());
     }
 
     // Lock camera position behind boids 
     if(this->lockedPositionBehind) {
         v3 boidGroupCenter = boids[0]->getPos();
-        v3 boidsBack = boidGroupCenter - glm::normalize(boids[0]->speedVector) * 35.0f;
-        boidsBack.y = boids[0]->getPos().y + 20.0f;
+        v3 boidsBack = boidGroupCenter - glm::normalize(boids[0]->speedVector) * 65.0f;
+        boidsBack.y = boids[0]->getPos().y + 40.0f;
         camera->position = boidsBack;
     }
 
@@ -273,23 +293,9 @@ void GameController::drawElements() {
 
     if(vao != NULL) delete vao;
 
-    checkForWalls();
     followGoal();
     checkForObstacles();
-
-    v3 center = getBoidGroupCenter();
-    //loop every boid
-    for(int i = 0; i < boids.size(); i++) {
-        v3 goal = boids[i]->originalPosition + center;
-        float distance = glm::distance(goal, boids[i]->getPos());
-        float nextDistance = glm::distance(goal, boids[i]->getPos() + boids[i]->speedVector);
-        
-        boids[i]->speedMultiplier = nextDistance < distance ? 1.2f : 0.8f;
-
-        if(distance < 10.0f) {
-            boids[i]->speedMultiplier = 1.0f;
-        }
-    }
+    checkForWalls();
     
     if(!paused) {
         for(int i = 0; i < boids.size(); i++) {
@@ -342,10 +348,11 @@ void GameController::drawObjects(vector<GObject*> &objects, Texture* tex) {
 
     for(int i = 0; i < objects.size(); i++) {
         GObject *obj = objects[i];
+        if(obj->destroyed) continue;
         totalVertices += obj->vertices.size();
         totalIndices += obj->indices.size();
     }
-    sizeVArray = totalVertices * 11 * sizeof(GLfloat);
+    sizeVArray = totalVertices * 12 * sizeof(GLfloat);
     sizeIArray = totalIndices * sizeof(GLuint);
 
     vArray = (GLfloat*) malloc(sizeVArray);
@@ -359,10 +366,10 @@ void GameController::drawObjects(vector<GObject*> &objects, Texture* tex) {
     vbo1 = new VBO(vArray, sizeVArray);
     ebo1 = new EBO(indices, sizeIArray);
     
-    vao->linkAttrib(*vbo1, 0, 3, GL_FLOAT, 11 * sizeof(float), (void*)0); // pos
-    vao->linkAttrib(*vbo1, 1, 3, GL_FLOAT, 11 * sizeof(float), (void*)(3 * sizeof(float))); // color
-    vao->linkAttrib(*vbo1, 2, 2, GL_FLOAT, 11 * sizeof(float), (void*)(6 * sizeof(float))); // texture
-    vao->linkAttrib(*vbo1, 3, 3, GL_FLOAT, 11 * sizeof(float), (void*)(8 * sizeof(float))); // normal
+    vao->linkAttrib(*vbo1, 0, 3, GL_FLOAT, 12 * sizeof(float), (void*)0); // pos
+    vao->linkAttrib(*vbo1, 1, 4, GL_FLOAT, 12 * sizeof(float), (void*)(3 * sizeof(float))); // color
+    vao->linkAttrib(*vbo1, 2, 2, GL_FLOAT, 12 * sizeof(float), (void*)(7 * sizeof(float))); // texture
+    vao->linkAttrib(*vbo1, 3, 3, GL_FLOAT, 12 * sizeof(float), (void*)(9 * sizeof(float))); // normal
     
     vao->unbind();
     delete vbo1;
@@ -463,11 +470,15 @@ void GameController::createRandomBoid() {
 
 void GameController::deleteRandomBoid() {
     // delete random boid
-    if(boids.size() > 1) {
-        int index = rand() % boids.size();
-        objectsPlaneText.erase(objectsPlaneText.begin() + index);
+    if(boids.size() > 2) {
+        int index = (rand() % (boids.size()-1)) + 1;
+        boids[index]->destroy();
         boids.erase(boids.begin() + index);
     }
+}
+
+bool toTheLeft(v3 a, v3 b, v3 c) {
+    return ((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) > 0;
 }
 
 void GameController::checkForWalls() {
@@ -485,8 +496,10 @@ void GameController::checkForWalls() {
         v3 normal = glm::normalize(glm::cross(p2 - p1, p3 - p1));
         
 
-        // get distance to shortest vertice on the wall
+        // get distance to closest vertice on the wall
         GLfloat distanceToWall = abs(glm::dot(boidsPos - p1, normal));
+        v3 closestPoint = boidsPos - distanceToWall * normal;
+
 
         v3 newBoidPos = boidsPos + boidsSpeed;
 
@@ -496,7 +509,10 @@ void GameController::checkForWalls() {
 
         if(intoWallMove) {
             if(distanceToWall < 60) {
+                bool isToTheLeft = toTheLeft(goalBoid->getPos(), p1 + goalBoid->speedVector, closestPoint);
+
                 goalBoid->rotating = true;
+                goalBoid->rotatingNeg = !isToTheLeft;
                 set = true;
             }
         }
@@ -518,7 +534,7 @@ bool GameController::goingToHitTower(Boid *boidTest, GObject *tower) {
     GLfloat nextDistanceToTower = glm::distance(nextboidTestPos, towerPos);
     
     // if not going to hit tower stop
-    if(!(distanceToTower < 35.0)) {
+    if(!(distanceToTower < 25.0)) {
         return false;
     }
 
@@ -546,8 +562,8 @@ void GameController::checkForObstacles() {
         }
     }
 
-    // loop every boid
-    for(int i = 0; i < boids.size(); i++) {
+    // loop every boid (except for the first => ghost boid)
+    for(int i = 1; i < boids.size(); i++) {
         // loop every boid
         for(int j = i+1; j < boids.size(); j++) {
             // if same boid, continue
@@ -564,23 +580,34 @@ void GameController::checkForObstacles() {
 }
 
 void GameController::followGoal() {
+    
     for(int i = 0; i < boids.size(); i++) {
         // follow goal
-        v3 goalPos = goalBoid->getPos();
+        v3 goalPos = i == 0 ? goalBoid->getPos() : ghostBoid->getPos();
         v3 vec1 = boids[i]->speedVector;
         v3 vec2 = goalPos - boids[i]->getPos() ;
 
         // get angle between boid and goal
         // get angle to rotate vec1 to vec 2, between -180 and 180
-        GLfloat angle = glm::acos(glm::dot(vec1, vec2) / (glm::length(vec1) * glm::length(vec2)));
+        GLfloat angle = glm::degrees(glm::acos(glm::dot(vec1, vec2) / (glm::length(vec1) * glm::length(vec2))));
         
         v3 a = vec1;
         v3 b = vec2;
 
-        float dot = a.x*-b.z + a.z*b.x;
-        bool isToTheLeft = dot > 0;
+        bool isToTheLeft = toTheLeft(boids[i]->getPos(), boids[i]->getPos() + boids[i]->speedVector, goalPos);
     
-        boids[i]->rotating = true;
-        boids[i]->rotatingNeg = !isToTheLeft;
+        // don't rotate if angle to goal is small (Avoid back gamera glitching)
+        boids[i]->rotating = angle > 1.0;
+        boids[i]->rotatingNeg = isToTheLeft;
+
+        if(i > 0) {
+            v3 center = getBoidGroupCenter();
+            float dist = glm::distance(center, boids[i]->getPos());
+            if(dist < 10.0f) {
+                boids[i]->speedMultiplier = 1.0f;
+            }else{
+                boids[i]->speedMultiplier = 1.0f + dist/90.0f;
+            }
+        }
     }
 }

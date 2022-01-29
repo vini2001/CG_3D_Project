@@ -77,6 +77,7 @@ private:
     vector<GObject*> obstacles;
 
     Boid* goalBoid;
+    Boid* ghostBoid;
 
     vector<GObject*> walls;
 

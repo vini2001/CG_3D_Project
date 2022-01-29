@@ -5,7 +5,7 @@ out vec4 FragColor;
 
 
 // Imports the color from the Vertex Shader
-in vec3 color;
+in vec4 color;
 // Imports the texture coordinates from the Vertex Shader
 in vec2 texCoord;
 // Imports the normal from the Vertex Shader
@@ -40,5 +40,5 @@ void main()
 	float specular = specAmount * specularLight;
 
 	// outputs final color
-	FragColor = texture(tex0, texCoord) * vec4(color, 1.0f) * vec4(lightColor * (diffuse + ambient + specular), 1.0f);
+	FragColor = texture(tex0, texCoord) * color * vec4(lightColor * (diffuse + ambient + specular), 1.0f);
 }

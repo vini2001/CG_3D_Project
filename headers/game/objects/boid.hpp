@@ -13,6 +13,7 @@ class Boid : public GObject {
         void animate();
         void frameUpdate();
         Boid(v3 translation);
+        Boid(v3 translation, v3 color);
 
         bool rotating = 0.0f;
         bool rotatingNeg = false;
@@ -29,6 +30,8 @@ class Boid : public GObject {
 
         v3 originalPosition;
 
+        float size = 0.3f;
+
     private:
         int leftWingId;
         int rightWingId;
@@ -38,7 +41,6 @@ class Boid : public GObject {
         bool animationStarted = false;
         float yCoord;
 
-        float size = 0.3f;
 
 };
 

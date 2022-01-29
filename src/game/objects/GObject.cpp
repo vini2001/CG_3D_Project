@@ -54,9 +54,9 @@ void GObject::recalculateNormals() {
 }
 
 void GObject::prepare(GLfloat* vArray, long &arrayPos, GLuint* iArray, long &indicesPos) {
-
+    if(destroyed) return;
     // Each vertice represents 11 positions on the vArray array. So for each 11 positions, 1 vertice has been added. At this point, we need to know how many vertices have been added to determine the starting ID of this shape's vertices
-    int startingId = (int) arrayPos/11;
+    int startingId = (int) arrayPos/12;
 
     for(int i = 0; i < vertices.size(); i++) {
         vArray[arrayPos++] = vertices[i].coords.x;
@@ -65,6 +65,7 @@ void GObject::prepare(GLfloat* vArray, long &arrayPos, GLuint* iArray, long &ind
         vArray[arrayPos++] = vertices[i].colors.x;
         vArray[arrayPos++] = vertices[i].colors.y;
         vArray[arrayPos++] = vertices[i].colors.z;
+        vArray[arrayPos++] = opacity;
         vArray[arrayPos++] = vertices[i].texture.x;
         vArray[arrayPos++] = vertices[i].texture.y;
         vArray[arrayPos++] = vertices[i].normal.x;
@@ -103,4 +104,8 @@ void GObject::rotate(v3 degrees) {
 
 v3 GObject::getPos() {
     return vertices[0].coords;
+}
+
+void GObject::destroy() {
+    destroyed = true;
 }
