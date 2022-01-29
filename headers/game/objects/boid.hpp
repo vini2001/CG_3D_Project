@@ -4,6 +4,7 @@
 
 #include "GObject.hpp"
 #include <glm/glm.hpp>
+#include "utils.hpp"
 
 typedef glm::vec3 v3;
 typedef glm::vec2 v2;
@@ -16,7 +17,6 @@ class Boid : public GObject {
         Boid(v3 translation, v3 color);
 
         bool rotating = 0.0f;
-        bool rotatingNeg = false;
         vector<GLfloat> rotatingQueue;
 
         v3 getPos();
@@ -32,7 +32,10 @@ class Boid : public GObject {
 
         float size = 0.3f;
 
+        void setRotatingNeg(bool flag);
+
     private:
+        bool rotatingNeg = false;
         int leftWingId;
         int rightWingId;
 

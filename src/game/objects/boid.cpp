@@ -39,7 +39,7 @@ void Boid::frameUpdate() {
         }
     }
 
-    GLfloat rotateSpeed = 5.0f * speed * speedMultiplier;
+    GLfloat rotateSpeed = 10.0f * speed * speedMultiplier;
     this->rotateBoid(rotatingNeg ? -rotateSpeed : rotateSpeed);
 }
 
@@ -49,6 +49,10 @@ void Boid::rotateBoid(float degree) {
     // rotate speed vector
     this->speedVector = glm::rotateY(this->speedVector, glm::radians(degree));
     rotated += degree;
+}
+
+void Boid::setRotatingNeg(bool flag) {
+    rotatingNeg = flag;
 }
 
 // set the calculated pos to a vertice in the trunk so it doesn't flap as the wings do
@@ -75,9 +79,9 @@ Boid::Boid(v3 translation, v3 color) {
         userDefaultColors = true;
     }
 
-    v3 wingsColor = userDefaultColors ? v3(.419f, 0.519f, 0.919f) : color;
-    v3 trunkColor = userDefaultColors ? v3(0.2f, 0.2f, 0.2f) : color;
-    v3 backColor = userDefaultColors ? v3(0.04f, 0.04f, 0.04f) : color;
+    v3 wingsColor = userDefaultColors ? v3(.419f, 0.519f, 0.919f) : (color + v3(.419f, 0.519f, 0.919f))/2.0f;
+    v3 trunkColor = userDefaultColors ? v3(0.2f, 0.2f, 0.2f) : (color + v3(0.2f, 0.2f, 0.2f))/2.0f;
+    v3 backColor = userDefaultColors ? v3(0.04f, 0.04f, 0.04f) : (color + v3(0.04f, 0.04f, 0.04f))/2.0f;
 
     // LEFT WING
     this->leftWingId = this->addVertice(GVertice(v3(0.0f, 0.0f, 0.0f), wingsColor, v2(0.0f, 0.0f)));

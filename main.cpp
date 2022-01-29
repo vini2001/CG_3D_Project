@@ -87,16 +87,17 @@ int main(void){
     #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     #endif
-//    glfwWindowHint(GLFW_REFRESH_RATE, 15);
     
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
      
     glfwWindowHint(GLFW_RED_BITS, mode->redBits);
     glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
     glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    glfwWindowHint(GLFW_REFRESH_RATE, 100);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GL_SCISSOR_TEST, GL_TRUE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
+
 
     game::window = glfwCreateWindow(1440, 900, "CG game", NULL, NULL);
     if(game::window == NULL) {
@@ -110,7 +111,6 @@ int main(void){
     glfwSetCursorPosCallback(game::window, cursor_position_callback);
     glfwSetWindowSizeCallback(game::window, WindowSizeCallback);
     glfwSetWindowPosCallback(game::window, WindowPosCallback);
-    // glfwSetInputMode(game::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwGetWindowSize(game::window, &game::width, &game::height);
     
     cout << "height: " << game::height << ", width: " << game::width << endl;
@@ -124,7 +124,8 @@ int main(void){
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    
+    glfwSwapInterval(1);
+
     Shader shaderProgram("shaders/default.vert", "shaders/default.frag");
     gameController.init(&shaderProgram);
     
@@ -173,7 +174,6 @@ int main(void){
             pressedKey = -1;
             pressedMouseButton = -1; // set as -1 to avoid duplicated actions
 
-            gameController.frameActions();
             gameController.drawElements();
             
             // update fps every 100 so it doesn't flash too fast
@@ -185,7 +185,7 @@ int main(void){
             gameController.drawText(fpsS, game::width-70, game::height-30, 0.3f, fps < 60 ? glm::vec3(0.8, 0.1f, 0.1f) :  glm::vec3(0.1, 0.7f, 0.1f));
             
             
-            glfwSwapBuffers(game::window);
+            glFlush();
         }
     }
     

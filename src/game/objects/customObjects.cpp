@@ -1,6 +1,7 @@
 #include "GVertice.hpp"
 #include "GObject.hpp"
 #include <glm/glm.hpp>
+#include "tower.hpp"
 
 GObject* createPyramid() {
 
@@ -58,7 +59,7 @@ GObject* createPyramid() {
     return pyramid;
 }
 
-GObject* createTower(GLfloat height, GLfloat radius) {
+Tower* createTower(GLfloat height, GLfloat radius) {
 
     GLfloat circunference = 2.0f * M_PI * radius;
     int segments = 200;
@@ -66,7 +67,9 @@ GObject* createTower(GLfloat height, GLfloat radius) {
 
     v3 towerColor = v3(0.219f, 0.219f, 0.219f);
 
-    GObject* tower = new GObject();
+    Tower* tower = new Tower();
+    tower->height = height;
+    tower->radius = radius;
     GVertice  verCenter = GVertice(v3(0.0f, 0.0f, 0.0f), towerColor, v2(0.5f, 0.5f));
     GVertice  verTop = GVertice(v3(0.0f, height, 0.0f), towerColor + v3(0.5f, 0.5f, 0.5f), v2(4.0f, 4.0f));
     int vci = tower->addVertice(verCenter);

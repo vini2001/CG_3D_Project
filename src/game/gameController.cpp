@@ -9,8 +9,6 @@
 #include "boid.hpp"
 #include "customObjects.hpp"
 
-#define DEBUG_MODE_FALSE -100
-
 
 GameController::GameController() {}
 
@@ -103,7 +101,7 @@ void GameController::init(Shader *shaderProgram){
     this->obstacles.push_back(t6);
 
     ghostBoid = new Boid(v3(100.0f, 30.0f, 100.0f), v3(1.0f, 0.0f, 0.0f));
-    ghostBoid->opacity = 0.05f;
+    ghostBoid->opacity = 0.2f;
     ghostBoid->speedMultiplier = 1.06f;
     objectsPlaneText.push_back(ghostBoid);
     ghostBoid->translate(v3(30.0f, rand()%6 - 3, 30.0f));
@@ -124,9 +122,10 @@ void GameController::init(Shader *shaderProgram){
         boids[i]->originalPosition = getBoidGroupCenter() - boids[i]->getPos();
     }
 
-    this->goalBoid = new Boid(v3(0.0f, 30.0f, 0.0f));
-    this->goalBoid->size = 0.9f; // hack pra arrumar batidas das asas
-    goalBoid->scale(v3(3.0f, 3.0f, 3.0f));
+    this->goalBoid = new Boid(v3(0.0f, 30.0f, 0.0f), v3(0.0f, 0.5f, 0.0f));
+    goalBoid->opacity = 0.6f;
+    this->goalBoid->size = 1.5f; // hack pra arrumar batidas das asas
+    goalBoid->scale(v3(5.0f, 5.0f, 5.0f));
     this->goalBoid->translate(v3(worldSize/2.0f, 0.0f, worldSize/2.0f - 80.0f));
     objectsPlaneText.push_back(goalBoid);
 
@@ -187,75 +186,111 @@ void GameController::initLight() {
 }
 
 void GameController::handleInput(GLuint pressedKey, GLuint pressedMouseButton, Vec2 mousePos) {
-    
-    if(pressedKey == GLFW_KEY_R) {
-        destroy();
-        init(shader);
-    }else if(pressedKey == GLFW_KEY_C) { // Bring light to camera
-        // print camera position
-        v3 camPos = camera->position;
-        printf("Camera position: %f, %f, %f\n", camPos.x, camPos.y, camPos.z);
-        v3 lightPos = v3(camera->position.x, camera->position.y, camera->position.z);
-        m4 lightModel = m4(1.0f);
-        lightModel = glm::translate(lightModel, lightPos);
 
-        this->lightShader->activate();
-        glUniformMatrix4fv(glGetUniformLocation(this->lightShader->id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-        this->shader->activate();
-        glUniform3f(glGetUniformLocation(this->shader->id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-    }else if(pressedKey == GLFW_KEY_1) {
-        lockedPositionBehind = false;
-        v3 boidGroupCenter = getBoidGroupCenter();
-        camera->position = this->towerTop + v3(0.0f, 2.0f, 0.0f);
-        camera->lookAt(boidGroupCenter);
-    }else if(pressedKey == GLFW_KEY_2) {
-        lockedPositionBehind = true;
-        camera->lookAt(getBoidGroupCenter());
-    }else if(pressedKey == GLFW_KEY_L) {
-        this->lockedOrientation = !this->lockedOrientation;
-    }else if(pressedKey == GLFW_KEY_0) {
-        this->lockedPositionBehind = false;
-    }else if(pressedKey == GLFW_KEY_P) {
-        paused = !paused;
-    }else if(pressedKey == GLFW_KEY_X) { // debug
-        // this->ghostBoid->frameUpdate();
-        // //print getBoidGroupCenter
-        // v3 boidGroupCenter = getBoidGroupCenter();
-        // printf("Boid group center: %f, %f, %f\n", boidGroupCenter.x, boidGroupCenter.y, boidGroupCenter.z);
-    }else if(pressedKey == GLFW_KEY_EQUAL) {
-        createRandomBoid();
-    }else if(pressedKey == GLFW_KEY_MINUS) {
-        deleteRandomBoid();
-    }else if(pressedKey == GLFW_KEY_O) {
-        goalBoid->speed += 0.1f;
-    }else if(pressedKey == GLFW_KEY_I) {
-        goalBoid->speed -= 0.1f;
-        if(goalBoid->speed < 0.0f) {
-            goalBoid->speed = 0.0f;
+    switch(pressedKey) {
+        case GLFW_KEY_R: {
+            destroy();
+            init(shader);
+            break;
         }
-    }else if(pressedKey == GLFW_KEY_M) {
-        for(int i = 0; i < boids.size(); i++) {
-            boids[i]->speed += 0.1f;
+        case GLFW_KEY_C: { // bring light to current camera position
+            v3 camPos = camera->position;
+            printf("Camera position: %f, %f, %f\n", camPos.x, camPos.y, camPos.z);
+            v3 lightPos = v3(camera->position.x, camera->position.y, camera->position.z);
+            m4 lightModel = m4(1.0f);
+            lightModel = glm::translate(lightModel, lightPos);
+
+            this->lightShader->activate();
+            glUniformMatrix4fv(glGetUniformLocation(this->lightShader->id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+            this->shader->activate();
+            glUniform3f(glGetUniformLocation(this->shader->id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+            break;
         }
-    }else if(pressedKey == GLFW_KEY_N) {
-        for(int i = 0; i < boids.size(); i++) {
-            boids[i]->speed -= 0.1f;
-            if(boids[i]->speed < 0.0f) {
-                boids[i]->speed = 0.0f;
+        case GLFW_KEY_1: { // Camera mode 1, top of the tower
+            lockedPositionBehind = false;
+            lockedPositionSide = false;
+            v3 boidGroupCenter = getBoidGroupCenter();
+            camera->position = this->towerTop + v3(0.0f, 2.0f, 0.0f);
+            camera->lookAt(boidGroupCenter);
+            break;
+        }
+        case GLFW_KEY_2: { // Camera mode 2, behind boids
+            lockedPositionBehind = true;
+            lockedPositionSide = false;
+            camera->lookAt(getBoidGroupCenter());
+            break;
+        }
+        case GLFW_KEY_3: { // Camera mode 3, side of the boids
+            lockedPositionSide = true;
+            lockedPositionBehind = false;
+            lockedPositionSideCounterClockwise = false;
+            break;
+        }
+        case GLFW_KEY_4: { // Camera mode 4, other side of the boids
+            lockedPositionSide = true;
+            lockedPositionBehind = false;
+            lockedPositionSideCounterClockwise = true;
+            break;
+        }
+        case GLFW_KEY_L: { // Lock or unlock fixed camera orientation pointing to boids
+            this->lockedOrientation = !this->lockedOrientation;
+            break;
+        }
+        case GLFW_KEY_0: { // Unlock camera position if fixed to move with the boids
+            this->lockedPositionBehind = false;
+            this->lockedPositionSide = false;
+            break;
+        }
+        case GLFW_KEY_P: { // Pause
+            paused = !paused;
+            if(!paused) debugMode = false;
+            break;
+        }
+        case GLFW_KEY_LEFT_BRACKET: { // Debug mode
+            if(!debugMode) {
+                paused = true;
+            }else{
+                allowDebugFrames++;
             }
+            debugMode = true;
+            break;
+        }
+        case GLFW_KEY_EQUAL: {
+            createRandomBoid();
+            break;
+        }
+        case GLFW_KEY_MINUS: {
+            deleteRandomBoid();
+            break;
+        }
+        case GLFW_KEY_O: { // Increase goal boid speed
+            goalBoid->speed += 0.1f;
+            break;
+        }
+        case GLFW_KEY_I: { // Decrease goal boid speed
+            goalBoid->speed -= 0.1f;
+            if(goalBoid->speed < 0.0f) {
+                goalBoid->speed = 0.0f;
+            }
+            break;
+        }
+        case GLFW_KEY_M: { // Increase boid group speed
+            for(int i = 0; i < boids.size(); i++) {
+                boids[i]->speed += 0.1f;
+            }
+            break;
+        }
+        case GLFW_KEY_N: { // Decrease boid group speed
+            for(int i = 0; i < boids.size(); i++) {
+                boids[i]->speed -= 0.1f;
+                if(boids[i]->speed < 0.0f) {
+                    boids[i]->speed = 0.0f;
+                }
+            }
+            break;
         }
     }
-    
     if(!game::started) return;
-}
-
-
-void GameController::frameActions() {
-    game::frameCount++;
-    
-    if(game::paused) {
-       
-    }
 }
 
 void GameController::resizeScreen() {
@@ -269,6 +304,9 @@ void GameController::resizeScreen() {
 
 float rotation = 0.0f;
 double prevTime = glfwGetTime();
+
+bool acSpVSet = false;
+v3 acSpVector = v3(0.0f, 0.0f, 0.0f);
 void GameController::drawElements() {
 
     if(this->lockedOrientation) {
@@ -277,10 +315,29 @@ void GameController::drawElements() {
     }
 
     // Lock camera position behind boids 
-    if(this->lockedPositionBehind) {
+    if(lockedPositionBehind || lockedPositionSide) {
         v3 boidGroupCenter = boids[0]->getPos();
-        v3 boidsBack = boidGroupCenter - glm::normalize(boids[0]->speedVector) * 65.0f;
-        boidsBack.y = boids[0]->getPos().y + 40.0f;
+        v3 spVec = glm::normalize(boids[0]->speedVector);
+
+        if(lockedPositionSide) {
+            if(lockedPositionSideCounterClockwise) {
+                spVec = v3(-spVec.z, spVec.y, spVec.x);
+            }else{
+                spVec = v3(spVec.z, spVec.y, -spVec.x);
+            }
+        }
+
+        if(!acSpVSet) {
+            acSpVector = spVec;
+            acSpVSet = true;
+        }else{
+            float sp = boids[0]->speed;
+            float smoothFactor = 25.0;
+            float changeRatio = 1.0 - (1.0 - (1.0 / (smoothFactor * (sp + 1.0)) ));
+            acSpVector = acSpVector * (1-changeRatio) + spVec * changeRatio;
+        }
+
+        v3 boidsBack = boidGroupCenter - acSpVector * 55.0f;
         camera->position = boidsBack;
     }
 
@@ -297,7 +354,7 @@ void GameController::drawElements() {
     checkForObstacles();
     checkForWalls();
     
-    if(!paused) {
+    if(!paused || allowDebugFrames > 0) {
         for(int i = 0; i < boids.size(); i++) {
             boids[i]->animate();
             boids[i]->frameUpdate();
@@ -305,6 +362,11 @@ void GameController::drawElements() {
 
         goalBoid->animate();
         goalBoid->frameUpdate();
+
+        if(allowDebugFrames > 0) {
+            printDebug();
+            allowDebugFrames--;
+        }
     }
     
     drawObjects(objects, brickTex);
@@ -326,7 +388,7 @@ void GameController::drawElements() {
     }
 
     if(paused) {
-        drawText("PAUSED", game::width / 2 - 80, game::height / 2, 1.0f, v3(1.0f, 1.0f, 1.0f));
+        drawText(debugMode ? "DEBUG" : "PAUSED", game::width / 2 - 80, game::height / 2, 1.0f, v3(1.0f, 1.0f, 1.0f));
     }
 }
 
@@ -512,7 +574,7 @@ void GameController::checkForWalls() {
                 bool isToTheLeft = toTheLeft(goalBoid->getPos(), p1 + goalBoid->speedVector, closestPoint);
 
                 goalBoid->rotating = true;
-                goalBoid->rotatingNeg = !isToTheLeft;
+                goalBoid->setRotatingNeg(!isToTheLeft);
                 set = true;
             }
         }
@@ -526,15 +588,24 @@ void GameController::checkForWalls() {
 }
 
 bool GameController::goingToHitTower(Boid *boidTest, GObject *tower) {
-    v3 boidTestPos = boidTest->getPos(); boidTestPos.y = 0.0f;
-    v3 nextboidTestPos = boidTestPos + boidTest->speedVector;
+
+    v3 boidTestPos = boidTest->getPos();
+    float yPos = boidTestPos.y;
+    boidTestPos.y = 0.0f;
+    Tower *realTower = dynamic_cast<Tower*>(tower);
+    float realRadius = realTower->height < yPos ? 0.0f : realTower->radius * ((realTower->height - yPos) / realTower->height);
+
+    v3 nextboidTestPos = boidTestPos + boidTest->speedVector; nextboidTestPos.y = 0.0f;
     v3 towerPos = tower->getPos(); towerPos.y = 0.0f;
+
+
     // get distance to tower
-    GLfloat distanceToTower = glm::distance(boidTestPos, towerPos);
-    GLfloat nextDistanceToTower = glm::distance(nextboidTestPos, towerPos);
+    GLfloat distanceToTower = glm::distance(boidTestPos, towerPos) - realRadius;
+    GLfloat nextDistanceToTower = glm::distance(nextboidTestPos, towerPos) - realRadius;
+
     
     // if not going to hit tower stop
-    if(!(distanceToTower < 25.0)) {
+    if(!(distanceToTower < 15.0f)) {
         return false;
     }
 
@@ -545,9 +616,9 @@ bool GameController::goingToHitTower(Boid *boidTest, GObject *tower) {
 
     bool isToTheLeft = glm::dot(glm::cross(vec1, vec2), glm::normalize(boidTest->getPos())) < 0;
     if(isToTheLeft) {
-        boidTest->rotatingNeg = false;
+        boidTest->setRotatingNeg(false);
     }else{
-        boidTest->rotatingNeg = true;
+        boidTest->setRotatingNeg(true);
     }
     return true;
 }
@@ -556,7 +627,6 @@ void GameController::checkForObstacles() {
 
     bool obstacleFound = false;
     for(int j = 0; j < obstacles.size(); j++){
-        obstacleFound |= goingToHitTower(goalBoid, obstacles[j]);
         for(int i = 0; i < boids.size(); i++) {
             obstacleFound |= goingToHitTower(boids[i], obstacles[j]);
         }
@@ -598,7 +668,7 @@ void GameController::followGoal() {
     
         // don't rotate if angle to goal is small (Avoid back gamera glitching)
         boids[i]->rotating = angle > 1.0;
-        boids[i]->rotatingNeg = isToTheLeft;
+        boids[i]->setRotatingNeg(isToTheLeft);
 
         if(i > 0) {
             v3 center = getBoidGroupCenter();
@@ -606,8 +676,17 @@ void GameController::followGoal() {
             if(dist < 10.0f) {
                 boids[i]->speedMultiplier = 1.0f;
             }else{
-                boids[i]->speedMultiplier = 1.0f + dist/90.0f;
+                boids[i]->speedMultiplier = 1.0f + dist/200.0f;
             }
         }
     }
+}
+
+void GameController::printDebug() {
+    // PRINT COORDS of all boids, ghostboid and goalboid
+    for(int i = 1; i < boids.size(); i++) {
+        printf("Boid %d: %f %f %f\n", i, boids[i]->getPos().x, boids[i]->getPos().y, boids[i]->getPos().z);
+    }
+    printf("GhostBoid (Boids Group invisible guide): %f %f %f\n", ghostBoid->getPos().x, ghostBoid->getPos().y, ghostBoid->getPos().z);
+    printf("GoalBoid (Boids Group goal): %f %f %f\n", goalBoid->getPos().x, goalBoid->getPos().y, goalBoid->getPos().z);
 }

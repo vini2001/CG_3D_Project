@@ -8,7 +8,6 @@ bool game::started = false;
 long game::pausedTime = 0;
 long game::pausedAt = 0;
 bool game::paused = false;
-long game::frameCount = 0;
 
 GLFWwindow* game::window;
 

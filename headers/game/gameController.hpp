@@ -35,7 +35,6 @@ public:
     void drawObjects(vector<GObject*> &objects, Texture *tex);
     void detectColisions();
     void handleInput(GLuint pressedKey, GLuint pressedMouseButton, Vec2 mousePos);
-    void frameActions();
     void drawText(string text, float x, float y, float scale, glm::vec3 colors);
     void destroy();
     void resizeScreen();
@@ -50,6 +49,8 @@ public:
     GameController();
     
 private:
+    int allowDebugFrames = 0;
+    bool debugMode = false;
 
     float worldSize = 384.0f;
     float worldHeight = 300.0f;
@@ -88,27 +89,22 @@ private:
     v3 towerTop;
     
     bool goalBoidRotating = false;
-    
     long lastAttack = 0;
-
-    v3 getBoidGroupCenter();
-
     bool lockedOrientation = true;
     bool lockedPositionBehind = false;
-
+    bool lockedPositionSide = false;
+    bool lockedPositionSideCounterClockwise = false;
     bool paused = false;
 
     bool isValidBoidPosition(v3 pos);
-
-
     void checkForWalls();
     void checkForObstacles();
-
     void createRandomBoid();
     void deleteRandomBoid();
     void followGoal();
-
     bool goingToHitTower(Boid *boid, GObject *obstacle);
+    void printDebug();
+    v3 getBoidGroupCenter();
 };
 
 #endif /* gameController_hpp */

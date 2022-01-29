@@ -15,7 +15,6 @@ namespace game {
     extern long pausedTime;
     extern long pausedAt;
     extern bool paused;
-    extern long frameCount;
 }
 extern int debugLevel;
 extern long framesSinceUpdate;
